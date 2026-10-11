@@ -39,22 +39,19 @@ public enum WidgetSize: String, CaseIterable, Identifiable, Codable, Sendable {
         }
     }
 
-    public var shortLabel: String {
-        switch self {
-        case .small: return "Small"
-        case .medium: return "Medium"
-        case .large: return "Large"
-        case .extraLarge: return "Extra Large"
+    /// Extra Large (`systemExtraLarge`) only exists on iPad.
+    public var isAvailableOnCurrentDevice: Bool {
+        #if canImport(UIKit)
+        if self == .extraLarge {
+            return UIDevice.current.userInterfaceIdiom == .pad
         }
+        #endif
+        return true
     }
 
-    public var dimensionLabel: String {
-        switch self {
-        case .small: return "158×158"
-        case .medium: return "338×158"
-        case .large: return "338×338"
-        case .extraLarge: return "Whole Screen"
-        }
+    @MainActor
+    public static var availableSizes: [WidgetSize] {
+        allCases.filter(\.isAvailableOnCurrentDevice)
     }
 }
 
@@ -116,22 +113,23 @@ public enum WidgetCategory: String, CaseIterable, Identifiable, Codable, Sendabl
     public var permissionRationale: String {
         switch self {
         case .health:
-            return "Read live step count, active calories, heart rate, resting vitals, blood oxygen (SpO2), respiratory rate, sleep analysis, sleep score, water intake, and caffeine directly from Apple HealthKit."
+            return "Widgets can show your steps, heart rate, sleep, water, and other Health data. It stays on this device."
         case .clock:
-            return "Synchronize atomic system time, live seconds, and world clock timezones."
+            return "Clock widgets use your device’s time and don’t need access."
         case .reminders:
-            return "Access and complete scheduled checklists and tasks synced with Apple Reminders via EventKit."
+            return "Widgets can show your reminders and let you check them off."
         case .calendar:
-            return "Read upcoming events, scheduled meetings, and day agendas directly from Apple Calendar via EventKit."
+            return "Widgets can show your upcoming events."
         case .notes:
-            return "Pin fast glass memos, rich scratchpads, and launch directly into Apple Notes."
+            return "Notes widgets show text you enter in the app."
         case .alarms:
-            return "Schedule wake-up alarms and smart alerts with custom chimes using Apple UserNotifications."
+            return "Alarm widgets need permission to send notifications."
         }
     }
 
+    /// Current (non-legacy) layouts offered for this category.
     public var widgetTypes: [WidgetType] {
-        WidgetType.allCases.filter { $0.category == self }
+        WidgetType.allCases.filter { $0.category == self && !$0.isLegacy }
     }
 }
 
@@ -187,7 +185,12 @@ public enum WidgetType: String, CaseIterable, Identifiable, Codable, Sendable {
         }
     }
 
-    public var category: WidgetCategory {
+    /// Retired layouts kept only so saved widgets still decode.
+    public var isLegacy: Bool {
+        self == .quickHub || self == .calendarEvents || self == .batteryVitals
+    }
+
+    nonisolated public var category: WidgetCategory {
         switch self {
         case .stepActivity, .healthHeartRate, .healthSteps, .healthSleep, .healthHydration, .healthBloodOxygen, .healthVitalsHub:
             return .health
@@ -246,38 +249,66 @@ public enum WidgetType: String, CaseIterable, Identifiable, Codable, Sendable {
         }
     }
 
+    /// User-facing name. `rawValue` is persisted, so it stays unchanged.
+    public var displayName: String {
+        switch self {
+        case .stepActivity: return "Activity"
+        case .healthHeartRate: return "Heart rate"
+        case .healthSteps: return "Steps"
+        case .healthSleep: return "Sleep"
+        case .healthHydration: return "Water and caffeine"
+        case .healthBloodOxygen: return "Blood oxygen"
+        case .healthVitalsHub: return "Vitals"
+        case .digitalClock: return "Digital clock"
+        case .clockWorld: return "World clock"
+        case .clockAnalog: return "Analog clock"
+        case .remindersList: return "Reminders list"
+        case .remindersToday: return "Today’s progress"
+        case .calendarUpcoming: return "Up next"
+        case .calendarMonth: return "Month"
+        case .calendarDayView: return "Day timeline"
+        case .aestheticQuote: return "Pinned note"
+        case .notesScratchpad: return "Scratchpad"
+        case .alarmsNext: return "Next alarm"
+        case .alarmsHub: return "All alarms"
+        case .quickHub: return "Counter"
+        case .calendarEvents: return "Agenda"
+        case .batteryVitals: return "Battery"
+        }
+    }
+
     public var subtitle: String {
         switch self {
         // Health
-        case .stepActivity: return "Daily steps, active calories & distance via HealthKit"
-        case .healthHeartRate: return "Real-time pulse, resting heart rate & vitals"
-        case .healthSteps: return "Live step progress ring with daily goal"
-        case .healthSleep: return "Sleep duration, stages & smart sleep score out of 100"
-        case .healthHydration: return "Daily water intake (mL) & caffeine tracker"
-        case .healthBloodOxygen: return "Blood oxygen (SpO2) saturation & respiratory rate"
-        case .healthVitalsHub: return "Heart rate, SpO2, sleep, hydration & vitals dashboard"
+        case .stepActivity: return "Steps, active energy, and heart rate"
+        case .healthHeartRate: return "Current and resting heart rate"
+        case .healthSteps: return "Steps toward your daily goal"
+        case .healthSleep: return "Time asleep and sleep score"
+        case .healthHydration: return "Water and caffeine today"
+        case .healthBloodOxygen: return "Blood oxygen and breathing rate"
+        case .healthVitalsHub: return "Heart rate, oxygen, sleep, and water"
 
         // Clock
-        case .digitalClock: return "Real-time glass clock with seconds pulse"
-        case .clockWorld: return "Multi-city global timezone tracker"
-        case .clockAnalog: return "Fluid refractive analog clock dial"
+        case .digitalClock: return "Local time and date"
+        case .clockWorld: return "Time in other cities"
+        case .clockAnalog: return "A classic clock face"
 
         // Reminders
-        case .remindersList: return "Interactive checklist synced with Apple Reminders"
-        case .remindersToday: return "Today's pending tasks and completion progress"
+        case .remindersList: return "Upcoming reminders you can check off"
+        case .remindersToday: return "How many of today’s reminders are done"
 
         // Calendar
-        case .calendarUpcoming: return "Next meetings, timeline & event countdown"
-        case .calendarMonth: return "Monthly glass calendar matrix with date indicators"
-        case .calendarDayView: return "Chronological hourly breakdown of today's schedule"
+        case .calendarUpcoming: return "Your next events"
+        case .calendarMonth: return "This month with today highlighted"
+        case .calendarDayView: return "Today’s events in order"
 
         // Notes
-        case .aestheticQuote: return "Pinned glass memo with Apple Notes quick link"
-        case .notesScratchpad: return "Scratchpad with instant bullet points"
+        case .aestheticQuote: return "A pinned note"
+        case .notesScratchpad: return "A short list of notes"
 
         // Alarms
-        case .alarmsNext: return "Next scheduled wake-up with toggle switch"
-        case .alarmsHub: return "Smart alarms matrix and countdown timer"
+        case .alarmsNext: return "Your next alarm with an on/off switch"
+        case .alarmsHub: return "All alarms at a glance"
 
         // Legacy
         case .quickHub: return "Interactive Home Screen toggles & counter"
@@ -295,6 +326,15 @@ public enum WidgetFontFamily: String, CaseIterable, Identifiable, Codable, Senda
     case newYork = "New York Serif"
 
     public var id: String { rawValue }
+
+    public var displayName: String {
+        switch self {
+        case .sfRounded: return "Rounded"
+        case .sfPro: return "Default"
+        case .sfMono: return "Monospaced"
+        case .newYork: return "Serif"
+        }
+    }
 
     public func font(size: CGFloat, weight: Font.Weight = .regular) -> Font {
         switch self {
@@ -322,6 +362,16 @@ public enum WidgetBackgroundMode: String, CaseIterable, Identifiable, Codable, S
 
     public var id: String { rawValue }
 
+    public var displayName: String {
+        switch self {
+        case .liquidGlass: return "Glass"
+        case .solidColor: return "Solid color"
+        case .linearGradient: return "Linear gradient"
+        case .radialGradient: return "Radial gradient"
+        case .meshGradient: return "Mesh gradient"
+        }
+    }
+
     public var icon: String {
         switch self {
         case .liquidGlass: return "sparkles"
@@ -341,6 +391,15 @@ public enum WidgetGradientDirection: String, CaseIterable, Identifiable, Codable
     case bottomLeadingToTopTrailing = "Angle Up"
 
     public var id: String { rawValue }
+
+    public var displayName: String {
+        switch self {
+        case .topToBottom: return "Top to bottom"
+        case .diagonal: return "Diagonal"
+        case .leadingToTrailing: return "Left to right"
+        case .bottomLeadingToTopTrailing: return "Angled up"
+        }
+    }
 
     public var startPoint: UnitPoint {
         switch self {
@@ -470,7 +529,7 @@ public struct WidgetConfig: Identifiable, Codable, Equatable, Sendable {
     public var glassOverlayEnabled: Bool
     public var backgroundOpacity: Double
 
-    public var category: WidgetCategory {
+    nonisolated public var category: WidgetCategory {
         type.category
     }
 

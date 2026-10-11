@@ -274,6 +274,10 @@ public final class WidgetStore: ObservableObject {
     // MARK: - Nonisolated Static Access for Timeline Providers & App Entities
 
     nonisolated public static func loadWidgetsFromSharedStorage() -> [WidgetConfig] {
+        decodeStoredWidgets().map(clearingLegacyPresetText)
+    }
+
+    nonisolated private static func decodeStoredWidgets() -> [WidgetConfig] {
         // 1. Try reading directly from shared container file
         if let fileURL = sharedContainerFileURL,
            let fileData = try? Data(contentsOf: fileURL),
@@ -298,6 +302,44 @@ public final class WidgetStore: ObservableObject {
         }
 
         return defaultPresets
+    }
+
+    // MARK: - Legacy Preset Text
+
+    /// Earlier presets baked in all-caps titles and marketing subtitles. Widgets saved from
+    /// those presets get them cleared so the layout's own sentence-case title shows instead.
+    /// Only exact matches are touched, so text the user typed is kept.
+    nonisolated private static let legacyPresetTitles: Set<String> = [
+        "ALARM COMMAND CENTER", "ALARM CONSOLE", "ALARM CONTROLLER", "ANALOG DIAL", "APPLE CALENDAR",
+        "APPLE NOTES", "APPLE REMINDERS", "BLOOD OXYGEN", "GLOBAL TIME TELEMETRY", "GLOBAL TIMEZONES",
+        "HEALTHKIT VITALS", "HYDRATION GOAL", "LOCAL • TIME", "MONTH SCHEDULE", "MORNING WAKE",
+        "NEXT EVENT", "NOTES & IDEAS CONSOLE", "OCTOBER 2026 CALENDAR", "PINNED NOTE", "PULSE VITALS",
+        "QUICK MEMO", "SCRATCHPAD", "SLEEP & RECOVERY", "TASK MANAGEMENT HUB", "TASKS TODAY",
+        "TELEMETRY VITALS", "TODAY'S TO-DOS", "VITALS TELEMETRY CONSOLE", "VITALS TELEMETRY",
+        "WAKE-UP ALARM", "WORLD CLOCK MATRIX"
+    ]
+
+    nonisolated private static let legacyPresetSubtitles: Set<String> = [
+        "2,500 mL / Day", "3 pending tasks", "4 Completed", "7:00 AM Active", "Apple HealthKit live bio-sensors",
+        "Atomic Time Sync", "Due today: 3 tasks", "Executive Keynote & Sync", "Executive agenda & multi-day schedule",
+        "Executive highlights", "Full calendar agenda", "Goal: 10,000 steps", "In 45 minutes", "Interactive task list",
+        "Live Apple HealthKit panoramic bio-sensors", "Live HealthKit Matrix", "Live atomic sync",
+        "Multi-schedule notification chimes", "Next: 7:00 AM (Sunlight)", "Pinned glass canvas and quick scratchpad",
+        "Precision sweep", "Priority to-do list & tasks", "Product Launch & Sync", "Quick bullets", "Resting: 68 BPM",
+        "Scheduled Chimes", "SpO2 Saturation", "Studio Keynote", "Synced with Apple Notes",
+        "Synced with Apple Reminders", "TYO • LON • NYC • SFO", "Target: 8.0 hrs",
+        "Water shapes itself to the vessel, yet cuts through stone.", "Worldwide atomic chrono sync"
+    ]
+
+    nonisolated private static func clearingLegacyPresetText(_ widget: WidgetConfig) -> WidgetConfig {
+        var widget = widget
+        if legacyPresetTitles.contains(widget.customTitle) {
+            widget.customTitle = ""
+        }
+        if legacyPresetSubtitles.contains(widget.customSubtitle) {
+            widget.customSubtitle = ""
+        }
+        return widget
     }
 
     nonisolated public static func loadActiveState() -> ActiveWidgetsState {
@@ -398,8 +440,8 @@ public final class WidgetStore: ObservableObject {
                 specularIntensity: 0.95,
                 showEdgeShine: true,
                 fontFamily: .sfRounded,
-                customTitle: "HEALTHKIT VITALS",
-                customSubtitle: "Goal: 10,000 steps",
+                customTitle: "",
+                customSubtitle: "",
                 counterValue: 8420,
                 isToggled: true
             ),
@@ -413,8 +455,8 @@ public final class WidgetStore: ObservableObject {
                 specularIntensity: 0.90,
                 showEdgeShine: true,
                 fontFamily: .sfRounded,
-                customTitle: "SLEEP & RECOVERY",
-                customSubtitle: "Target: 8.0 hrs",
+                customTitle: "",
+                customSubtitle: "",
                 counterValue: 89,
                 isToggled: true
             ),
@@ -428,8 +470,8 @@ public final class WidgetStore: ObservableObject {
                 specularIntensity: 0.88,
                 showEdgeShine: true,
                 fontFamily: .sfRounded,
-                customTitle: "BLOOD OXYGEN",
-                customSubtitle: "SpO2 Saturation",
+                customTitle: "",
+                customSubtitle: "",
                 counterValue: 98,
                 isToggled: true
             ),
@@ -443,8 +485,8 @@ public final class WidgetStore: ObservableObject {
                 specularIntensity: 0.90,
                 showEdgeShine: true,
                 fontFamily: .sfRounded,
-                customTitle: "HYDRATION GOAL",
-                customSubtitle: "2,500 mL / Day",
+                customTitle: "",
+                customSubtitle: "",
                 counterValue: 1850,
                 isToggled: true
             ),
@@ -458,8 +500,8 @@ public final class WidgetStore: ObservableObject {
                 specularIntensity: 0.85,
                 showEdgeShine: true,
                 fontFamily: .sfRounded,
-                customTitle: "PULSE VITALS",
-                customSubtitle: "Resting: 68 BPM",
+                customTitle: "",
+                customSubtitle: "",
                 counterValue: 72,
                 isToggled: true
             ),
@@ -473,8 +515,8 @@ public final class WidgetStore: ObservableObject {
                 specularIntensity: 0.96,
                 showEdgeShine: true,
                 fontFamily: .sfRounded,
-                customTitle: "TELEMETRY VITALS",
-                customSubtitle: "Apple HealthKit live bio-sensors",
+                customTitle: "",
+                customSubtitle: "",
                 counterValue: 8420,
                 isToggled: true
             ),
@@ -490,8 +532,8 @@ public final class WidgetStore: ObservableObject {
                 specularIntensity: 0.92,
                 showEdgeShine: true,
                 fontFamily: .sfMono,
-                customTitle: "LOCAL • TIME",
-                customSubtitle: "Live atomic sync",
+                customTitle: "",
+                customSubtitle: "",
                 counterValue: 0,
                 isToggled: true
             ),
@@ -505,8 +547,8 @@ public final class WidgetStore: ObservableObject {
                 specularIntensity: 0.88,
                 showEdgeShine: true,
                 fontFamily: .sfRounded,
-                customTitle: "GLOBAL TIMEZONES",
-                customSubtitle: "TYO • LON • NYC • SFO",
+                customTitle: "",
+                customSubtitle: "",
                 counterValue: 4,
                 isToggled: true
             ),
@@ -520,8 +562,8 @@ public final class WidgetStore: ObservableObject {
                 specularIntensity: 0.85,
                 showEdgeShine: true,
                 fontFamily: .sfRounded,
-                customTitle: "ANALOG DIAL",
-                customSubtitle: "Precision sweep",
+                customTitle: "",
+                customSubtitle: "",
                 counterValue: 0,
                 isToggled: true
             ),
@@ -537,8 +579,8 @@ public final class WidgetStore: ObservableObject {
                 specularIntensity: 0.85,
                 showEdgeShine: true,
                 fontFamily: .sfRounded,
-                customTitle: "APPLE REMINDERS",
-                customSubtitle: "Due today: 3 tasks",
+                customTitle: "",
+                customSubtitle: "",
                 counterValue: 3,
                 isToggled: false,
                 backgroundMode: .solidColor,
@@ -554,8 +596,8 @@ public final class WidgetStore: ObservableObject {
                 specularIntensity: 0.88,
                 showEdgeShine: true,
                 fontFamily: .sfRounded,
-                customTitle: "TODAY'S TO-DOS",
-                customSubtitle: "3 pending tasks",
+                customTitle: "",
+                customSubtitle: "",
                 counterValue: 3,
                 isToggled: true
             ),
@@ -569,8 +611,8 @@ public final class WidgetStore: ObservableObject {
                 specularIntensity: 0.92,
                 showEdgeShine: true,
                 fontFamily: .sfRounded,
-                customTitle: "APPLE REMINDERS",
-                customSubtitle: "Priority to-do list & tasks",
+                customTitle: "",
+                customSubtitle: "",
                 counterValue: 4,
                 isToggled: false
             ),
@@ -586,8 +628,8 @@ public final class WidgetStore: ObservableObject {
                 specularIntensity: 0.92,
                 showEdgeShine: true,
                 fontFamily: .sfRounded,
-                customTitle: "APPLE CALENDAR",
-                customSubtitle: "Product Launch & Sync",
+                customTitle: "",
+                customSubtitle: "",
                 counterValue: 4,
                 isToggled: true
             ),
@@ -601,8 +643,8 @@ public final class WidgetStore: ObservableObject {
                 specularIntensity: 0.90,
                 showEdgeShine: true,
                 fontFamily: .sfRounded,
-                customTitle: "MONTH SCHEDULE",
-                customSubtitle: "Full calendar agenda",
+                customTitle: "",
+                customSubtitle: "",
                 counterValue: 4,
                 isToggled: true
             ),
@@ -616,8 +658,8 @@ public final class WidgetStore: ObservableObject {
                 specularIntensity: 0.88,
                 showEdgeShine: true,
                 fontFamily: .sfRounded,
-                customTitle: "NEXT EVENT",
-                customSubtitle: "Studio Keynote",
+                customTitle: "",
+                customSubtitle: "",
                 counterValue: 1,
                 isToggled: true
             ),
@@ -633,8 +675,8 @@ public final class WidgetStore: ObservableObject {
                 specularIntensity: 0.85,
                 showEdgeShine: true,
                 fontFamily: .newYork,
-                customTitle: "QUICK MEMO",
-                customSubtitle: "Water shapes itself to the vessel, yet cuts through stone.",
+                customTitle: "",
+                customSubtitle: "",
                 counterValue: 1,
                 isToggled: true
             ),
@@ -648,8 +690,8 @@ public final class WidgetStore: ObservableObject {
                 specularIntensity: 0.85,
                 showEdgeShine: true,
                 fontFamily: .sfRounded,
-                customTitle: "SCRATCHPAD",
-                customSubtitle: "Quick bullets",
+                customTitle: "",
+                customSubtitle: "",
                 counterValue: 3,
                 isToggled: true
             ),
@@ -665,8 +707,8 @@ public final class WidgetStore: ObservableObject {
                 specularIntensity: 0.90,
                 showEdgeShine: true,
                 fontFamily: .sfRounded,
-                customTitle: "WAKE-UP ALARM",
-                customSubtitle: "7:00 AM Active",
+                customTitle: "",
+                customSubtitle: "",
                 counterValue: 7,
                 isToggled: true
             ),
@@ -680,8 +722,8 @@ public final class WidgetStore: ObservableObject {
                 specularIntensity: 0.92,
                 showEdgeShine: true,
                 fontFamily: .sfMono,
-                customTitle: "ALARM CONTROLLER",
-                customSubtitle: "Next: 7:00 AM (Sunlight)",
+                customTitle: "",
+                customSubtitle: "",
                 counterValue: 2,
                 isToggled: true
             ),
@@ -697,8 +739,8 @@ public final class WidgetStore: ObservableObject {
                 specularIntensity: 0.98,
                 showEdgeShine: true,
                 fontFamily: .sfRounded,
-                customTitle: "VITALS TELEMETRY CONSOLE",
-                customSubtitle: "Live Apple HealthKit panoramic bio-sensors",
+                customTitle: "",
+                customSubtitle: "",
                 counterValue: 8420,
                 isToggled: true
             ),
@@ -712,8 +754,8 @@ public final class WidgetStore: ObservableObject {
                 specularIntensity: 0.94,
                 showEdgeShine: true,
                 fontFamily: .sfRounded,
-                customTitle: "OCTOBER 2026 CALENDAR",
-                customSubtitle: "Executive agenda & multi-day schedule",
+                customTitle: "",
+                customSubtitle: "",
                 counterValue: 4,
                 isToggled: true
             ),
@@ -727,8 +769,8 @@ public final class WidgetStore: ObservableObject {
                 specularIntensity: 0.92,
                 showEdgeShine: true,
                 fontFamily: .sfMono,
-                customTitle: "GLOBAL TIME TELEMETRY",
-                customSubtitle: "Worldwide atomic chrono sync",
+                customTitle: "",
+                customSubtitle: "",
                 counterValue: 4,
                 isToggled: true
             ),
@@ -742,8 +784,8 @@ public final class WidgetStore: ObservableObject {
                 specularIntensity: 0.90,
                 showEdgeShine: true,
                 fontFamily: .sfRounded,
-                customTitle: "TASK MANAGEMENT HUB",
-                customSubtitle: "Synced with Apple Reminders",
+                customTitle: "",
+                customSubtitle: "",
                 counterValue: 4,
                 isToggled: false
             ),
@@ -757,8 +799,8 @@ public final class WidgetStore: ObservableObject {
                 specularIntensity: 0.88,
                 showEdgeShine: true,
                 fontFamily: .sfRounded,
-                customTitle: "NOTES & IDEAS CONSOLE",
-                customSubtitle: "Pinned glass canvas and quick scratchpad",
+                customTitle: "",
+                customSubtitle: "",
                 counterValue: 5,
                 isToggled: true
             ),
@@ -772,8 +814,8 @@ public final class WidgetStore: ObservableObject {
                 specularIntensity: 0.95,
                 showEdgeShine: true,
                 fontFamily: .sfMono,
-                customTitle: "ALARM COMMAND CENTER",
-                customSubtitle: "Multi-schedule notification chimes",
+                customTitle: "",
+                customSubtitle: "",
                 counterValue: 4,
                 isToggled: true
             )

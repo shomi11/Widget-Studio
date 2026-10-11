@@ -488,7 +488,7 @@ public struct WallpaperStudioView: View {
     public init() {}
 
     public var body: some View {
-        NavigationStack {
+        Group {
             VStack(spacing: 0) {
                 // Top device selector & section switcher
                 topControlBar
@@ -508,7 +508,7 @@ public struct WallpaperStudioView: View {
                 }
             }
             .background(Color(uiColor: .systemGroupedBackground).ignoresSafeArea())
-            .navigationTitle("Wallpaper Studio")
+            .navigationTitle("Wallpapers")
             .navigationBarTitleDisplayMode(.inline)
             .sheet(item: $previewItem) { item in
                 WallpaperFullscreenPreviewModal(
@@ -567,42 +567,12 @@ public struct WallpaperStudioView: View {
             }
             .pickerStyle(.segmented)
 
-            // Target Device Resolution Switcher
-            HStack(spacing: 12) {
-                Text("Target Device:")
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundStyle(.secondary)
-
-                Spacer()
-
-                HStack(spacing: 6) {
-                    ForEach(WallpaperDevice.allCases) { device in
-                        Button {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                selectedDevice = device
-                            }
-                        } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: device.icon)
-                                    .font(.caption2)
-                                Text(device.rawValue)
-                                    .font(.caption)
-                                    .fontWeight(.bold)
-                            }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(
-                                selectedDevice == device ? Color.blue : Color.primary.opacity(0.06),
-                                in: Capsule()
-                            )
-                            .foregroundStyle(selectedDevice == device ? .white : .primary)
-                        }
-                        .buttonStyle(.plain)
-                    }
+            Picker("Device", selection: $selectedDevice) {
+                ForEach(WallpaperDevice.allCases) { device in
+                    Label(device.rawValue, systemImage: device.icon).tag(device)
                 }
             }
-            .padding(.horizontal, 4)
+            .pickerStyle(.segmented)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
@@ -851,7 +821,7 @@ public struct WallpaperStudioView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 15)
-                    .background(Color.blue, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                     .foregroundStyle(.white)
                 }
                 .disabled(saver.isSaving)
@@ -909,8 +879,8 @@ public struct WallpaperStudioView: View {
                     .fontWeight(.bold)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
-                    .background(Color.blue.opacity(0.12), in: Capsule())
-                    .foregroundStyle(.blue)
+                    .background(Color.accentColor.opacity(0.12), in: Capsule())
+                    .foregroundStyle(.tint)
                 }
             }
 
@@ -1098,7 +1068,7 @@ public struct WallpaperStudioView: View {
                 Toggle(isOn: $creatorLiquidSheen) {
                     HStack(spacing: 10) {
                         Image(systemName: "sparkles")
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(.tint)
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Liquid Glass Sheen")
                                 .font(.subheadline)
@@ -1236,7 +1206,7 @@ public struct WallpaperFullscreenPreviewModal: View {
                                     .tint(.white)
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 6)
-                                    .background(Color.blue, in: Capsule())
+                                    .background(Color.accentColor, in: Capsule())
                             } else {
                                 HStack(spacing: 6) {
                                     Image(systemName: "square.and.arrow.down.fill")
@@ -1246,7 +1216,7 @@ public struct WallpaperFullscreenPreviewModal: View {
                                 .fontWeight(.bold)
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 7)
-                                .background(Color.blue, in: Capsule())
+                                .background(Color.accentColor, in: Capsule())
                                 .foregroundStyle(.white)
                             }
                         }
@@ -1281,8 +1251,8 @@ public struct WallpaperFullscreenPreviewModal: View {
             // Floating Mock Liquid Glass Widget Preview
             if showMockWidgets {
                 HStack(spacing: 14) {
-                    mockWidgetGlassCard(title: "CALENDAR", subtitle: "Team Sync", icon: "calendar")
-                    mockWidgetGlassCard(title: "HEALTH", subtitle: "9,420 Steps", icon: "flame.fill")
+                    mockWidgetGlassCard(title: "Calendar", subtitle: "Team standup", icon: "calendar")
+                    mockWidgetGlassCard(title: "Health", subtitle: "\(9_420.formatted()) steps", icon: "flame.fill")
                 }
                 .padding(.horizontal, 24)
             }

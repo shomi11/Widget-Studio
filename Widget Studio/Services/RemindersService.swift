@@ -45,10 +45,10 @@ public final class RemindersService: ObservableObject {
 
     private func loadDefaultReminders() {
         reminders = [
-            GlassReminderItem(title: "Review Liquid Glass design specs", isCompleted: false, priority: 1, dueDateDescription: "9:00 AM"),
-            GlassReminderItem(title: "Log daily workout & hydration", isCompleted: false, priority: 2, dueDateDescription: "12:30 PM"),
-            GlassReminderItem(title: "Executive presentation review", isCompleted: false, priority: 1, dueDateDescription: "3:00 PM"),
-            GlassReminderItem(title: "Evening meditation & wind down", isCompleted: true, priority: 0, dueDateDescription: "9:00 PM")
+            GlassReminderItem(title: "Buy groceries", isCompleted: false, priority: 1, dueDateDescription: "9:00 AM"),
+            GlassReminderItem(title: "Pay electricity bill", isCompleted: false, priority: 2, dueDateDescription: "12:30 PM"),
+            GlassReminderItem(title: "Call Mom", isCompleted: false, priority: 1, dueDateDescription: "3:00 PM"),
+            GlassReminderItem(title: "Take out recycling", isCompleted: true, priority: 0, dueDateDescription: "9:00 PM")
         ]
     }
 

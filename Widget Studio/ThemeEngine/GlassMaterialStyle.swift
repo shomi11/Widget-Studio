@@ -8,6 +8,14 @@ public enum GlassMaterialStyle: String, CaseIterable, Identifiable, Codable, Sen
 
     public var id: String { rawValue }
 
+    public var displayName: String {
+        switch self {
+        case .ultraClear: return "Clear"
+        case .tintedGlass: return "Tinted"
+        case .blackGlass: return "Dark"
+        }
+    }
+
     public var systemIcon: String {
         switch self {
         case .ultraClear:

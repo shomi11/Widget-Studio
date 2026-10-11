@@ -33,12 +33,30 @@ public struct WidgetDisplayView: View {
             widgetContent
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .widgetSurface(
-            config: widget,
-            cornerRadius: cornerRadiusForSize,
-            motionReactive: isInteractivePreview
-        )
+        .widgetSurface(config: widget, cornerRadius: cornerRadiusForSize)
         .environment(\.colorScheme, .dark)
+    }
+
+    // MARK: - Formatted values (locale-aware, consistent across every layout)
+
+    private var stepsText: String { healthService.todaySteps.formatted() }
+    private var stepGoalText: String { 10_000.formatted() }
+    private var caloriesText: String { "\(healthService.activeCalories.formatted()) kcal" }
+    private var heartRateText: String { "\(healthService.currentHeartRate.formatted()) bpm" }
+    private var restingRateText: String { "\(healthService.restingHeartRate.formatted()) bpm" }
+    private var oxygenText: String { (healthService.bloodOxygen / 100).formatted(.percent.precision(.fractionLength(1))) }
+    private var oxygenValueText: String { healthService.bloodOxygen.formatted(.number.precision(.fractionLength(1))) }
+    private var breathsText: String { "\(healthService.respiratoryRate.formatted(.number.precision(.fractionLength(0)))) breaths/min" }
+    private var sleepValueText: String { healthService.sleepHours.formatted(.number.precision(.fractionLength(1))) }
+    private var sleepText: String { "\(sleepValueText) h" }
+    private var waterValueText: String { Int(healthService.waterIntakeMl).formatted() }
+    private var waterText: String { "\(waterValueText) mL" }
+    private var waterGoalText: String { "\(2_500.formatted()) mL" }
+    private var caffeineText: String { "\(Int(healthService.caffeineMg).formatted()) mg" }
+
+    private var sleepStagesText: String {
+        let hours = FloatingPointFormatStyle<Double>.number.precision(.fractionLength(1))
+        return "Deep \(1.8.formatted(hours)) h · REM \(2.2.formatted(hours)) h · Core \(3.8.formatted(hours)) h"
     }
 
     private var cornerRadiusForSize: CGFloat {
@@ -117,7 +135,7 @@ public struct WidgetDisplayView: View {
 
     private var healthActivityView: some View {
         VStack(alignment: .leading, spacing: 8) {
-            headerBar(title: widget.customTitle.isEmpty ? "HEALTHKIT VITALS" : widget.customTitle, icon: "flame.fill", badge: "LIVE")
+            headerBar(title: widget.customTitle.isEmpty ? "Activity" : widget.customTitle, icon: "flame.fill", badge: "")
 
             Spacer(minLength: 0)
 
@@ -143,17 +161,17 @@ public struct WidgetDisplayView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("\(healthService.todaySteps)")
+                        Text(stepsText)
                             .font(widget.fontFamily.font(size: 20, weight: .black))
                             .foregroundStyle(Color.white)
                             .lineLimit(1)
                             .minimumScaleFactor(0.85)
 
-                        Text("STEPS")
-                            .font(widget.fontFamily.font(size: 8, weight: .bold))
+                        Text("Steps")
+                            .font(widget.fontFamily.font(size: 10, weight: .semibold))
                             .foregroundStyle(Color.white.opacity(0.72))
 
-                        Text("\(healthService.activeCalories) kcal")
+                        Text(caloriesText)
                             .font(.system(size: 10, weight: .bold))
                             .foregroundStyle(.orange)
                             .lineLimit(1)
@@ -183,19 +201,19 @@ public struct WidgetDisplayView: View {
                         }
 
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("\(healthService.todaySteps)")
+                            Text(stepsText)
                                 .font(widget.fontFamily.font(size: 32, weight: .black))
                                 .foregroundStyle(Color.white)
 
-                            Text("STEPS TODAY / 10,000 GOAL")
-                                .font(widget.fontFamily.font(size: 9.5, weight: .bold))
+                            Text("Steps today of \(stepGoalText)")
+                                .font(widget.fontFamily.font(size: 11, weight: .semibold))
                                 .foregroundStyle(Color.white.opacity(0.72))
 
                             HStack(spacing: 12) {
-                                Label("\(healthService.activeCalories) kcal", systemImage: "flame.fill")
+                                Label(caloriesText, systemImage: "flame.fill")
                                     .font(.system(size: 11, weight: .bold))
                                     .foregroundStyle(.orange)
-                                Label("\(healthService.currentHeartRate) bpm", systemImage: "heart.fill")
+                                Label(heartRateText, systemImage: "heart.fill")
                                     .font(.system(size: 11, weight: .bold))
                                     .foregroundStyle(.pink)
                             }
@@ -207,33 +225,33 @@ public struct WidgetDisplayView: View {
                     // 4-Card Vitals Grid filling the whole-screen canvas
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
                         vitalsHubCard(
-                            title: "BLOOD OXYGEN",
-                            value: "\(String(format: "%.1f", healthService.bloodOxygen))%",
-                            subtext: "Resp: \(String(format: "%.0f", healthService.respiratoryRate)) br/m",
+                            title: "Blood oxygen",
+                            value: oxygenText,
+                            subtext: breathsText,
                             icon: "lungs.fill",
                             color: .cyan
                         )
 
                         vitalsHubCard(
-                            title: "SLEEP RECOVERY",
-                            value: "\(String(format: "%.1f", healthService.sleepHours)) hrs",
-                            subtext: "Score: \(healthService.sleepScore)/100",
+                            title: "Sleep",
+                            value: sleepText,
+                            subtext: "Score \(healthService.sleepScore.formatted())",
                             icon: "bed.double.fill",
                             color: .purple
                         )
 
                         vitalsHubCard(
-                            title: "DAILY HYDRATION",
-                            value: "\(Int(healthService.waterIntakeMl)) mL",
-                            subtext: "Goal: 2,500 mL",
+                            title: "Water",
+                            value: waterText,
+                            subtext: "Goal \(waterGoalText)",
                             icon: "drop.fill",
                             color: .teal
                         )
 
                         vitalsHubCard(
-                            title: "RESTING PULSE",
-                            value: "\(healthService.restingHeartRate) BPM",
-                            subtext: "Status: Normal",
+                            title: "Resting heart rate",
+                            value: restingRateText,
+                            subtext: "Normal",
                             icon: "waveform.path.ecg",
                             color: .pink
                         )
@@ -245,29 +263,27 @@ public struct WidgetDisplayView: View {
                             Button {
                                 healthService.logWaterIntake(amountMl: 250)
                             } label: {
-                                Label("+250mL Quick Water", systemImage: "drop.fill")
+                                Label("Add \(250.formatted()) mL", systemImage: "drop.fill")
                                     .font(.system(size: 11, weight: .bold))
                                     .padding(.horizontal, 10)
                                     .padding(.vertical, 5)
-                                    .background(.ultraThinMaterial, in: Capsule())
+                                    .background(Color.white.opacity(0.12), in: Capsule())
                             }
                             .buttonStyle(.plain)
                         } else {
                             Button(intent: LogHydrationIntent(amountMl: 250)) {
-                                Label("+250mL Quick Water", systemImage: "drop.fill")
+                                Label("Add \(250.formatted()) mL", systemImage: "drop.fill")
                                     .font(.system(size: 11, weight: .bold))
                                     .padding(.horizontal, 10)
                                     .padding(.vertical, 5)
-                                    .background(.ultraThinMaterial, in: Capsule())
+                                    .background(Color.white.opacity(0.12), in: Capsule())
                             }
                             .buttonStyle(.plain)
                         }
 
                         Spacer()
 
-                        Text("Apple HealthKit Synced")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                        EmptyView()
                     }
                 }
             } else {
@@ -292,19 +308,19 @@ public struct WidgetDisplayView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("\(healthService.todaySteps)")
+                        Text(stepsText)
                             .font(widget.fontFamily.font(size: 26, weight: .black))
                             .foregroundStyle(Color.white)
 
-                        Text("STEPS TODAY")
-                            .font(widget.fontFamily.font(size: 10, weight: .bold))
+                        Text("Steps today")
+                            .font(widget.fontFamily.font(size: 12, weight: .semibold))
                             .foregroundStyle(Color.white.opacity(0.72))
 
                         HStack(spacing: 8) {
-                            Label("\(healthService.activeCalories) kcal", systemImage: "flame.fill")
+                            Label(caloriesText, systemImage: "flame.fill")
                                 .font(.system(size: 11, weight: .semibold))
                                 .foregroundStyle(.orange)
-                            Label("\(healthService.currentHeartRate) bpm", systemImage: "heart.fill")
+                            Label(heartRateText, systemImage: "heart.fill")
                                 .font(.system(size: 11, weight: .semibold))
                                 .foregroundStyle(.pink)
                         }
@@ -319,15 +335,15 @@ public struct WidgetDisplayView: View {
 
     private var healthHeartRateView: some View {
         VStack(alignment: .leading, spacing: 8) {
-            headerBar(title: widget.customTitle.isEmpty ? "HEART PULSE" : widget.customTitle, icon: "heart.fill", badge: "HEALTH")
+            headerBar(title: widget.customTitle.isEmpty ? "Heart rate" : widget.customTitle, icon: "heart.fill", badge: "")
 
             Spacer()
 
             HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text("\(healthService.currentHeartRate)")
+                Text(healthService.currentHeartRate.formatted())
                     .font(widget.fontFamily.font(size: widget.size == .small ? 38 : 46, weight: .heavy))
                     .foregroundStyle(.primary)
-                Text("BPM")
+                Text("bpm")
                     .font(widget.fontFamily.font(size: 14, weight: .bold))
                     .foregroundStyle(widget.tintColor)
             }
@@ -336,7 +352,7 @@ public struct WidgetDisplayView: View {
                 Image(systemName: "waveform.path.ecg")
                     .font(.system(size: 14, weight: .bold))
                     .foregroundStyle(widget.tintColor)
-                Text("Resting: \(healthService.restingHeartRate) • High: 112")
+                Text("Resting \(restingRateText)")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
@@ -348,18 +364,18 @@ public struct WidgetDisplayView: View {
 
     private var healthStepsView: some View {
         VStack(alignment: .leading, spacing: 8) {
-            headerBar(title: widget.customTitle.isEmpty ? "DAILY GOAL" : widget.customTitle, icon: "figure.walk", badge: "84%")
+            headerBar(title: widget.customTitle.isEmpty ? "Steps" : widget.customTitle, icon: "figure.walk", badge: min(Double(healthService.todaySteps) / 10_000.0, 1.0).formatted(.percent.precision(.fractionLength(0))))
 
             Spacer()
 
-            Text("\(healthService.todaySteps)")
+            Text(stepsText)
                 .font(widget.fontFamily.font(size: 36, weight: .black))
                 .foregroundStyle(.primary)
 
             ProgressView(value: min(Double(healthService.todaySteps) / 10000.0, 1.0))
                 .tint(widget.tintColor)
 
-            Text("Goal: 10,000 steps")
+            Text("Goal \(stepGoalText) steps")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
 
@@ -371,41 +387,38 @@ public struct WidgetDisplayView: View {
     private var healthSleepView: some View {
         VStack(alignment: .leading, spacing: 8) {
             headerBar(
-                title: widget.customTitle.isEmpty ? "SLEEP & RECOVERY" : widget.customTitle,
+                title: widget.customTitle.isEmpty ? "Sleep" : widget.customTitle,
                 icon: "bed.double.fill",
-                badge: "SCORE \(healthService.sleepScore)"
+                badge: ""
             )
 
             Spacer()
 
             HStack(alignment: .lastTextBaseline, spacing: 6) {
-                Text(String(format: "%.1f", healthService.sleepHours))
+                Text(sleepValueText)
                     .font(widget.fontFamily.font(size: widget.size == .small ? 34 : 44, weight: .heavy))
                     .foregroundStyle(.primary)
-                Text("HRS")
+                Text("h")
                     .font(widget.fontFamily.font(size: 14, weight: .bold))
                     .foregroundStyle(widget.tintColor)
 
                 Spacer()
 
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text("\(healthService.sleepScore)")
+                    Text(healthService.sleepScore.formatted())
                         .font(widget.fontFamily.font(size: 18, weight: .heavy))
-                        .foregroundStyle(.purple)
-                    Text("OPTIMAL")
-                        .font(widget.fontFamily.font(size: 8, weight: .black))
+                        .foregroundStyle(widget.tintColor)
+                    Text("Score")
+                        .font(widget.fontFamily.font(size: 10, weight: .semibold))
                         .foregroundStyle(.secondary)
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
 
             HStack(spacing: 6) {
                 Image(systemName: "moon.stars.fill")
                     .font(.system(size: 12))
                     .foregroundStyle(.purple)
-                Text("Deep 1.8h • REM 2.2h • Core 3.8h")
+                Text(sleepStagesText)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -419,9 +432,9 @@ public struct WidgetDisplayView: View {
     private var healthHydrationView: some View {
         VStack(alignment: .leading, spacing: 8) {
             headerBar(
-                title: widget.customTitle.isEmpty ? "HYDRATION & CAFFEINE" : widget.customTitle,
+                title: widget.customTitle.isEmpty ? "Water" : widget.customTitle,
                 icon: "drop.fill",
-                badge: "DAILY"
+                badge: ""
             )
 
             Spacer()
@@ -429,7 +442,7 @@ public struct WidgetDisplayView: View {
             HStack(spacing: 14) {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(alignment: .lastTextBaseline, spacing: 4) {
-                        Text("\(Int(healthService.waterIntakeMl))")
+                        Text(waterValueText)
                             .font(widget.fontFamily.font(size: widget.size == .small ? 26 : 32, weight: .heavy))
                             .foregroundStyle(.primary)
                         Text("mL")
@@ -440,7 +453,7 @@ public struct WidgetDisplayView: View {
                     ProgressView(value: min(healthService.waterIntakeMl / 2500.0, 1.0))
                         .tint(widget.tintColor)
 
-                    Text("Goal: 2,500 mL")
+                    Text("Goal \(waterGoalText)")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
@@ -454,12 +467,12 @@ public struct WidgetDisplayView: View {
                             Image(systemName: "cup.and.saucer.fill")
                                 .font(.system(size: 13))
                                 .foregroundStyle(.brown)
-                            Text("\(Int(healthService.caffeineMg)) mg")
+                            Text(caffeineText)
                                 .font(widget.fontFamily.font(size: 18, weight: .bold))
                                 .foregroundStyle(.primary)
                         }
 
-                        Text("Max 400 mg")
+                        Text("Limit \(400.formatted()) mg")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
@@ -471,34 +484,34 @@ public struct WidgetDisplayView: View {
                     Button {
                         healthService.logWaterIntake(amountMl: 250)
                     } label: {
-                        Label("+250mL", systemImage: "drop.fill")
+                        Label("\(250.formatted()) mL", systemImage: "plus")
                             .font(.caption2)
                             .fontWeight(.bold)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
-                            .background(.ultraThinMaterial, in: Capsule())
+                            .background(Color.white.opacity(0.12), in: Capsule())
                     }
                     .buttonStyle(.plain)
 
                     Button {
                         healthService.logCaffeine(amountMg: 60)
                     } label: {
-                        Label("+60mg", systemImage: "cup.and.saucer.fill")
+                        Label("\(60.formatted()) mg", systemImage: "plus")
                             .font(.caption2)
                             .fontWeight(.bold)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
-                            .background(.ultraThinMaterial, in: Capsule())
+                            .background(Color.white.opacity(0.12), in: Capsule())
                     }
                     .buttonStyle(.plain)
                 } else {
                     Button(intent: LogHydrationIntent(amountMl: 250)) {
-                        Label("+250mL", systemImage: "drop.fill")
+                        Label("\(250.formatted()) mL", systemImage: "plus")
                             .font(.caption2)
                             .fontWeight(.bold)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
-                            .background(.ultraThinMaterial, in: Capsule())
+                            .background(Color.white.opacity(0.12), in: Capsule())
                     }
                     .buttonStyle(.plain)
                 }
@@ -513,15 +526,15 @@ public struct WidgetDisplayView: View {
     private var healthBloodOxygenView: some View {
         VStack(alignment: .leading, spacing: 8) {
             headerBar(
-                title: widget.customTitle.isEmpty ? "BLOOD OXYGEN" : widget.customTitle,
+                title: widget.customTitle.isEmpty ? "Blood oxygen" : widget.customTitle,
                 icon: "lungs.fill",
-                badge: "SpO2"
+                badge: ""
             )
 
             Spacer()
 
             HStack(alignment: .lastTextBaseline, spacing: 4) {
-                Text(String(format: "%.1f", healthService.bloodOxygen))
+                Text(oxygenValueText)
                     .font(widget.fontFamily.font(size: widget.size == .small ? 36 : 46, weight: .heavy))
                     .foregroundStyle(.primary)
                 Text("%")
@@ -533,13 +546,14 @@ public struct WidgetDisplayView: View {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 12))
                     .foregroundStyle(.green)
-                Text("Normal Range (95-100%)")
+                Text("Normal range")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
 
+            if widget.size != .small {
             HStack(spacing: 8) {
-                Label(String(format: "%.0f br/min", healthService.respiratoryRate), systemImage: "wind")
+                Label(breathsText, systemImage: "wind")
                     .font(.caption2)
                     .fontWeight(.semibold)
                     .foregroundStyle(.cyan)
@@ -547,10 +561,11 @@ public struct WidgetDisplayView: View {
                 Text("•")
                     .foregroundStyle(.secondary)
 
-                Label("\(healthService.restingHeartRate) bpm rest", systemImage: "heart.fill")
+                Label("Resting \(restingRateText)", systemImage: "heart.fill")
                     .font(.caption2)
                     .fontWeight(.semibold)
                     .foregroundStyle(.pink)
+            }
             }
 
             Spacer()
@@ -561,9 +576,9 @@ public struct WidgetDisplayView: View {
     private var healthVitalsHubView: some View {
         VStack(alignment: .leading, spacing: 10) {
             headerBar(
-                title: widget.customTitle.isEmpty ? "VITALS TELEMETRY" : widget.customTitle,
+                title: widget.customTitle.isEmpty ? "Vitals" : widget.customTitle,
                 icon: "waveform.path.ecg.rectangle.fill",
-                badge: "HEALTHKIT"
+                badge: ""
             )
 
             Spacer()
@@ -571,78 +586,68 @@ public struct WidgetDisplayView: View {
             if widget.size == .extraLarge {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                     vitalsHubCard(
-                        title: "HEART PULSE",
-                        value: "\(healthService.currentHeartRate) BPM",
-                        subtext: "Rest: \(healthService.restingHeartRate) bpm",
+                        title: "Heart rate",
+                        value: heartRateText,
+                        subtext: "Resting \(restingRateText)",
                         icon: "heart.fill",
                         color: .pink
                     )
 
                     vitalsHubCard(
-                        title: "BLOOD O2 (SpO2)",
-                        value: "\(String(format: "%.1f", healthService.bloodOxygen))%",
-                        subtext: "Resp: \(String(format: "%.0f", healthService.respiratoryRate)) br/m",
+                        title: "Blood oxygen",
+                        value: oxygenText,
+                        subtext: breathsText,
                         icon: "lungs.fill",
                         color: .cyan
                     )
 
                     vitalsHubCard(
-                        title: "SLEEP & SCORE",
-                        value: "\(String(format: "%.1f", healthService.sleepHours)) hrs",
-                        subtext: "Score: \(healthService.sleepScore)/100",
+                        title: "Sleep",
+                        value: sleepText,
+                        subtext: "Score \(healthService.sleepScore.formatted())",
                         icon: "bed.double.fill",
                         color: .purple
                     )
 
                     vitalsHubCard(
-                        title: "HYDRATION",
-                        value: "\(Int(healthService.waterIntakeMl)) mL",
-                        subtext: "Caff: \(Int(healthService.caffeineMg)) mg",
+                        title: "Water",
+                        value: waterText,
+                        subtext: "Caffeine \(caffeineText)",
                         icon: "drop.fill",
                         color: .teal
                     )
 
                     vitalsHubCard(
-                        title: "DAILY STEPS",
-                        value: "\(healthService.todaySteps)",
-                        subtext: "Goal: 10,000 steps",
+                        title: "Steps",
+                        value: stepsText,
+                        subtext: "Goal \(stepGoalText)",
                         icon: "figure.walk",
                         color: .green
                     )
 
                     vitalsHubCard(
-                        title: "ACTIVE ENERGY",
-                        value: "\(healthService.activeCalories) kcal",
-                        subtext: "Pace: Normal Burn",
+                        title: "Active energy",
+                        value: caloriesText,
+                        subtext: "Today",
                         icon: "flame.fill",
                         color: .orange
                     )
                 }
 
-                HStack {
-                    Label("Resting: \(healthService.restingHeartRate) bpm", systemImage: "heart.fill")
-                        .font(.caption2)
-                        .foregroundStyle(.pink)
-                    Spacer()
-                    Text("Live Sensor Stream")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.top, 4)
             } else if widget.size == .small {
                 VStack(spacing: 8) {
                     vitalsHubCard(
-                        title: "HEART PULSE",
-                        value: "\(healthService.currentHeartRate) BPM",
-                        subtext: "Rest: \(healthService.restingHeartRate) bpm",
+                        title: "Heart rate",
+                        value: heartRateText,
+                        subtext: "Resting \(restingRateText)",
                         icon: "heart.fill",
                         color: .pink
                     )
 
                     vitalsHubCard(
-                        title: "BLOOD O2",
-                        value: "\(String(format: "%.1f", healthService.bloodOxygen))%",
-                        subtext: "Resp: \(String(format: "%.0f", healthService.respiratoryRate)) br/m",
+                        title: "Blood oxygen",
+                        value: oxygenText,
+                        subtext: breathsText,
                         icon: "lungs.fill",
                         color: .cyan
                     )
@@ -650,33 +655,33 @@ public struct WidgetDisplayView: View {
             } else {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                     vitalsHubCard(
-                        title: "HEART PULSE",
-                        value: "\(healthService.currentHeartRate) BPM",
-                        subtext: "Rest: \(healthService.restingHeartRate) bpm",
+                        title: "Heart rate",
+                        value: heartRateText,
+                        subtext: "Resting \(restingRateText)",
                         icon: "heart.fill",
                         color: .pink
                     )
 
                     vitalsHubCard(
-                        title: "BLOOD O2 (SpO2)",
-                        value: "\(String(format: "%.1f", healthService.bloodOxygen))%",
-                        subtext: "Resp: \(String(format: "%.0f", healthService.respiratoryRate)) br/m",
+                        title: "Blood oxygen",
+                        value: oxygenText,
+                        subtext: breathsText,
                         icon: "lungs.fill",
                         color: .cyan
                     )
 
                     vitalsHubCard(
-                        title: "SLEEP & SCORE",
-                        value: "\(String(format: "%.1f", healthService.sleepHours)) hrs",
-                        subtext: "Score: \(healthService.sleepScore)/100",
+                        title: "Sleep",
+                        value: sleepText,
+                        subtext: "Score \(healthService.sleepScore.formatted())",
                         icon: "bed.double.fill",
                         color: .purple
                     )
 
                     vitalsHubCard(
-                        title: "HYDRATION",
-                        value: "\(Int(healthService.waterIntakeMl)) mL",
-                        subtext: "Caff: \(Int(healthService.caffeineMg)) mg",
+                        title: "Water",
+                        value: waterText,
+                        subtext: "Caffeine \(caffeineText)",
                         icon: "drop.fill",
                         color: .teal
                     )
@@ -695,8 +700,9 @@ public struct WidgetDisplayView: View {
                     .font(.system(size: 11, weight: .bold))
                     .foregroundStyle(color)
                 Text(title)
-                    .font(.system(size: 9, weight: .bold))
+                    .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
             }
 
             Text(value)
@@ -710,18 +716,14 @@ public struct WidgetDisplayView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(8)
-        .background(.ultraThinMaterial.opacity(0.6), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.12), lineWidth: 0.5)
-        )
+        .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     // MARK: - 2. CLOCK CATEGORY VIEWS
 
     private var clockDigitalView: some View {
         VStack(alignment: .leading, spacing: 6) {
-            headerBar(title: widget.customTitle.isEmpty ? "LOCAL TIME" : widget.customTitle, icon: "clock.fill", badge: "ATOMIC")
+            headerBar(title: widget.customTitle.isEmpty ? "Local time" : widget.customTitle, icon: "clock.fill", badge: "")
 
             Spacer()
 
@@ -745,9 +747,9 @@ public struct WidgetDisplayView: View {
                     Divider()
                         .padding(.vertical, 4)
 
-                    Text("GLOBAL CITIES")
-                        .font(.system(size: 9.5, weight: .heavy))
-                        .foregroundStyle(Color.white.opacity(0.7))
+                    Text("Other cities")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.secondary)
 
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 6) {
                         ForEach(clockService.cities.prefix(4)) { city in
@@ -779,7 +781,7 @@ public struct WidgetDisplayView: View {
 
     private var clockWorldView: some View {
         VStack(alignment: .leading, spacing: 8) {
-            headerBar(title: widget.customTitle.isEmpty ? "WORLD CLOCK" : widget.customTitle, icon: "globe.americas.fill", badge: "SYNCED")
+            headerBar(title: widget.customTitle.isEmpty ? "World clock" : widget.customTitle, icon: "globe.americas.fill", badge: "")
 
             if widget.size == .extraLarge {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 6) {
@@ -839,7 +841,7 @@ public struct WidgetDisplayView: View {
         }()
 
         return VStack(spacing: 8) {
-            headerBar(title: widget.customTitle.isEmpty ? "ANALOG" : widget.customTitle, icon: "gauge.with.needle.fill", badge: "LIVE")
+            headerBar(title: widget.customTitle.isEmpty ? "Clock" : widget.customTitle, icon: "clock", badge: "")
 
             Spacer()
 
@@ -892,9 +894,9 @@ public struct WidgetDisplayView: View {
     private var remindersListView: some View {
         VStack(alignment: .leading, spacing: 8) {
             headerBar(
-                title: widget.customTitle.isEmpty ? "APPLE REMINDERS" : widget.customTitle,
+                title: widget.customTitle.isEmpty ? "Reminders" : widget.customTitle,
                 icon: "checklist",
-                badge: widget.size == .extraLarge ? "FULL BOARD" : "DUE TODAY"
+                badge: ""
             )
 
             let maxItems: Int = {
@@ -930,13 +932,10 @@ public struct WidgetDisplayView: View {
                 let completed = remindersService.reminders.filter { $0.isCompleted }.count
                 let total = remindersService.reminders.count
                 HStack {
-                    Label("\(completed)/\(total) Completed", systemImage: "checkmark.circle.fill")
+                    Label("\(completed.formatted()) of \(total.formatted()) done", systemImage: "checkmark.circle.fill")
                         .font(.caption2)
                         .foregroundStyle(widget.tintColor)
                     Spacer()
-                    Text("Synced with Reminders.app")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
                 }
             }
         }
@@ -971,16 +970,16 @@ public struct WidgetDisplayView: View {
         let remaining = total - completed
 
         return VStack(alignment: .leading, spacing: 8) {
-            headerBar(title: widget.customTitle.isEmpty ? "DAILY REMINDERS" : widget.customTitle, icon: "checklist.checked", badge: "TASKS")
+            headerBar(title: widget.customTitle.isEmpty ? "Today" : widget.customTitle, icon: "checklist.checked", badge: "")
 
             if widget.size == .small {
                 Spacer()
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("\(completed)/\(total)")
+                        Text("\(completed.formatted()) of \(total.formatted())")
                             .font(widget.fontFamily.font(size: 24, weight: .black))
                             .foregroundStyle(.primary)
-                        Text("Completed")
+                        Text("Done")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
@@ -1001,10 +1000,10 @@ public struct WidgetDisplayView: View {
                 HStack(spacing: 14) {
                     // Left Progress Metric
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("\(completed) of \(total)")
+                        Text("\(completed.formatted()) of \(total.formatted())")
                             .font(widget.fontFamily.font(size: 22, weight: .black))
                             .foregroundStyle(.primary)
-                        Text("\(remaining) Pending")
+                        Text("\(remaining.formatted()) left")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
 
@@ -1037,10 +1036,10 @@ public struct WidgetDisplayView: View {
                 // Large and Extra Large layout
                 HStack(spacing: 16) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("\(completed) of \(total)")
+                        Text("\(completed.formatted()) of \(total.formatted())")
                             .font(widget.fontFamily.font(size: 28, weight: .black))
                             .foregroundStyle(.primary)
-                        Text("Tasks Done")
+                        Text("Done")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
@@ -1055,8 +1054,7 @@ public struct WidgetDisplayView: View {
                             .frame(width: 52, height: 52)
                             .rotationEffect(.degrees(-90))
 
-                        let pct = total > 0 ? Int((Double(completed) / Double(total)) * 100) : 0
-                        Text("\(pct)%")
+                        Text((total > 0 ? Double(completed) / Double(total) : 0).formatted(.percent.precision(.fractionLength(0))))
                             .font(.system(size: 11, weight: .black))
                             .foregroundStyle(.white)
                     }
@@ -1110,26 +1108,23 @@ public struct WidgetDisplayView: View {
         let event = calendarService.nextUpcomingEvent
         let cal = Calendar.current
         let dayNum = cal.component(.day, from: Date())
-        let monthStr = DateFormatter().shortMonthSymbols[cal.component(.month, from: Date()) - 1].uppercased()
+        let monthStr = Date.now.formatted(.dateTime.month(.abbreviated))
 
         return VStack(alignment: .leading, spacing: 6) {
             HStack {
                 VStack(alignment: .leading, spacing: 0) {
                     Text(monthStr)
-                        .font(.system(size: 10, weight: .black))
+                        .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(widget.tintColor)
-                    Text("\(dayNum)")
+                    Text(dayNum.formatted())
                         .font(.system(size: 20, weight: .heavy, design: .rounded))
                         .foregroundStyle(.primary)
                 }
                 Spacer()
                 if let event = event {
                     Text(event.relativeDescription)
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(widget.tintColor.opacity(0.85), in: Capsule())
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(widget.tintColor)
                 }
             }
 
@@ -1173,29 +1168,27 @@ public struct WidgetDisplayView: View {
     private var calendarUpcomingMediumView: some View {
         let cal = Calendar.current
         let dayNum = cal.component(.day, from: Date())
-        let dayName = DateFormatter().shortWeekdaySymbols[cal.component(.weekday, from: Date()) - 1].uppercased()
-        let monthStr = DateFormatter().shortMonthSymbols[cal.component(.month, from: Date()) - 1].uppercased()
-        let upcoming = Array(calendarService.events.prefix(2))
+        let dayName = Date.now.formatted(.dateTime.weekday(.abbreviated))
+        let monthStr = Date.now.formatted(.dateTime.month(.abbreviated))
+        let upcoming = Array(calendarService.upcomingEvents.prefix(2))
 
         return VStack(alignment: .leading, spacing: 10) {
-            headerBar(title: widget.customTitle.isEmpty ? "APPLE CALENDAR" : widget.customTitle, icon: "calendar", badge: "\(calendarService.todayEvents.count) TODAY")
+            headerBar(title: widget.customTitle.isEmpty ? "Calendar" : widget.customTitle, icon: "calendar", badge: "")
 
             HStack(spacing: 14) {
                 // Left Date Hero Tile
                 VStack(spacing: 2) {
                     Text(dayName)
-                        .font(.system(size: 11, weight: .black))
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(widget.tintColor)
-                    Text("\(dayNum)")
-                        .font(.system(size: 34, weight: .black, design: .rounded))
+                    Text(dayNum.formatted())
+                        .font(.system(size: 34, weight: .bold, design: .rounded))
                         .foregroundStyle(.primary)
                     Text(monthStr)
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(.secondary)
                 }
                 .frame(width: 66)
-                .padding(.vertical, 4)
-                .background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
 
                 // Right: Upcoming event list
                 VStack(alignment: .leading, spacing: 6) {
@@ -1218,10 +1211,10 @@ public struct WidgetDisplayView: View {
     }
 
     private var calendarUpcomingLargeView: some View {
-        let upcoming = Array(calendarService.events.prefix(4))
+        let upcoming = Array(calendarService.upcomingEvents.prefix(4))
 
         return VStack(alignment: .leading, spacing: 12) {
-            headerBar(title: widget.customTitle.isEmpty ? "CALENDAR SCHEDULE" : widget.customTitle, icon: "calendar.badge.clock", badge: "\(upcoming.count) EVENTS")
+            headerBar(title: widget.customTitle.isEmpty ? "Up next" : widget.customTitle, icon: "calendar.badge.clock", badge: "")
 
             VStack(spacing: 8) {
                 ForEach(upcoming) { event in
@@ -1235,40 +1228,38 @@ public struct WidgetDisplayView: View {
     }
 
     private var calendarUpcomingExtraLargeView: some View {
-        let upcoming = Array(calendarService.events.prefix(5))
+        let upcoming = Array(calendarService.upcomingEvents.prefix(5))
         let nextEvent = calendarService.nextUpcomingEvent
         let cal = Calendar.current
         let dayNum = cal.component(.day, from: Date())
-        let dayName = DateFormatter().shortWeekdaySymbols[cal.component(.weekday, from: Date()) - 1].uppercased()
-        let monthStr = DateFormatter().shortMonthSymbols[cal.component(.month, from: Date()) - 1].uppercased()
+        let dayName = Date.now.formatted(.dateTime.weekday(.abbreviated))
+        let monthStr = Date.now.formatted(.dateTime.month(.abbreviated))
 
         return VStack(alignment: .leading, spacing: 10) {
             headerBar(
-                title: widget.customTitle.isEmpty ? "APPLE CALENDAR EXECUTIVE AGENDA" : widget.customTitle,
+                title: widget.customTitle.isEmpty ? "Calendar" : widget.customTitle,
                 icon: "calendar.badge.clock",
-                badge: "\(calendarService.todayEvents.count) TODAY"
+                badge: ""
             )
 
             // Top Hero: Date & Next Meeting
             HStack(spacing: 12) {
                 VStack(spacing: 1) {
                     Text(dayName)
-                        .font(.system(size: 11, weight: .black))
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(widget.tintColor)
-                    Text("\(dayNum)")
-                        .font(.system(size: 32, weight: .black, design: .rounded))
+                    Text(dayNum.formatted())
+                        .font(.system(size: 32, weight: .bold, design: .rounded))
                         .foregroundStyle(.primary)
                     Text(monthStr)
-                        .font(.system(size: 9, weight: .bold))
+                        .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(.secondary)
                 }
                 .frame(width: 58)
-                .padding(.vertical, 6)
-                .background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("NEXT UP")
-                        .font(.system(size: 9, weight: .heavy))
+                    Text("Up next")
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(widget.tintColor)
 
                     if let event = nextEvent {
@@ -1295,12 +1286,10 @@ public struct WidgetDisplayView: View {
                 }
                 Spacer()
             }
-            .padding(8)
-            .background(Color.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
 
-            Text("TODAY'S SCHEDULE")
-                .font(.system(size: 9.5, weight: .heavy))
-                .foregroundStyle(Color.white.opacity(0.7))
+            Text("Later")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.secondary)
                 .padding(.top, 2)
 
             if upcoming.isEmpty {
@@ -1309,7 +1298,7 @@ public struct WidgetDisplayView: View {
                     Image(systemName: "calendar.badge.checkmark")
                         .font(.system(size: 20))
                         .foregroundStyle(widget.tintColor)
-                    Text("Schedule is Clear")
+                    Text("Nothing scheduled")
                         .font(.system(size: 12, weight: .bold))
                     Spacer()
                 }
@@ -1325,13 +1314,10 @@ public struct WidgetDisplayView: View {
             Spacer(minLength: 0)
 
             HStack {
-                Label("\(calendarService.todayEvents.count) Events Today", systemImage: "calendar")
+                Label("\(calendarService.todayEvents.count.formatted()) events today", systemImage: "calendar")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Text(TimeZone.current.identifier)
-                    .font(.caption2)
-                    .foregroundStyle(widget.tintColor)
             }
         }
         .padding(14)
@@ -1410,7 +1396,7 @@ public struct WidgetDisplayView: View {
         .background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    // MARK: - Calendar Month View (Apple HIG Conforming for Small, Medium, Large, Extra Large)
+    // MARK: - Calendar Month View
     @ViewBuilder
     private var calendarMonthView: some View {
         switch widget.size {
@@ -1425,82 +1411,57 @@ public struct WidgetDisplayView: View {
         }
     }
 
-    private var calendarMonthSmallView: some View {
-        let cal = Calendar.current
-        let today = Date()
-        let dayNum = cal.component(.day, from: today)
-        let monthNum = cal.component(.month, from: today)
-        let yearNum = cal.component(.year, from: today)
-        let monthStr = DateFormatter().shortMonthSymbols[monthNum - 1].uppercased()
+    private var monthTitle: String {
+        Date.now.formatted(.dateTime.month(.wide).year())
+    }
 
-        let daysInMonth = cal.range(of: .day, in: .month, for: today)?.count ?? 31
+    /// Weekday headers plus the day grid for the current month.
+    private func monthGrid(cellHeight: CGFloat, fontSize: CGFloat, spacing: CGFloat) -> some View {
+        let grid = MonthGrid()
 
-        var comp = cal.dateComponents([.year, .month], from: today)
-        comp.day = 1
-        let firstDate = cal.date(from: comp) ?? today
-        let firstWeekday = cal.component(.weekday, from: firstDate)
-        let leadingOffset = firstWeekday - 1
-
-        return VStack(alignment: .leading, spacing: 3) {
-            // Header: Compact title and day badge
-            HStack(spacing: 4) {
-                Image(systemName: "calendar")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(widget.tintColor)
-
-                Text(widget.customTitle.isEmpty ? "\(monthStr) \(yearNum)" : widget.customTitle)
-                    .font(widget.fontFamily.font(size: 10, weight: .bold))
-                    .foregroundStyle(Color.white.opacity(0.92))
-                    .textCase(.uppercase)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-
-                Spacer(minLength: 2)
-
-                Text("\(dayNum)")
-                    .font(widget.fontFamily.font(size: 9, weight: .black))
-                    .foregroundStyle(widget.tintColor)
-                    .padding(.horizontal, 5)
-                    .padding(.vertical, 2)
-                    .background(Color.white.opacity(0.12), in: Capsule())
-            }
-
-            // Day of week headers
+        return VStack(spacing: spacing) {
             HStack(spacing: 0) {
-                ForEach(["S", "M", "T", "W", "T", "F", "S"], id: \.self) { d in
-                    Text(d)
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundStyle(Color.white.opacity(0.55))
+                ForEach(grid.weekdaySymbols.indices, id: \.self) { index in
+                    Text(grid.weekdaySymbols[index])
+                        .font(.system(size: fontSize - 0.5, weight: .semibold))
+                        .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity)
                 }
             }
-            .padding(.top, 1)
 
-            // Month Grid with true weekday offset and all days in month
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 7), spacing: 2) {
-                ForEach(0..<leadingOffset, id: \.self) { _ in
-                    Color.clear
-                        .frame(height: 14)
-                }
-
-                ForEach(1...daysInMonth, id: \.self) { d in
-                    let isToday = d == dayNum
-                    ZStack {
-                        if isToday {
-                            Circle()
-                                .fill(widget.tintColor)
-                                .frame(width: 15, height: 15)
-                        }
-                        Text("\(d)")
-                            .font(.system(size: 8.5, weight: isToday ? .black : .medium))
-                            .foregroundStyle(isToday ? .white : Color.white.opacity(0.85))
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 7), spacing: spacing) {
+                ForEach(grid.cells) { cell in
+                    if let day = cell.day {
+                        let isToday = day == grid.today
+                        Text(day.formatted())
+                            .font(.system(size: fontSize, weight: isToday ? .bold : .regular))
+                            .foregroundStyle(isToday ? Color.white : Color.white.opacity(0.85))
                             .lineLimit(1)
                             .minimumScaleFactor(0.7)
+                            .frame(width: cellHeight + 2, height: cellHeight)
+                            .background {
+                                if isToday {
+                                    Circle().fill(widget.tintColor)
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                    } else {
+                        Color.clear
+                            .frame(height: cellHeight)
                     }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 14)
                 }
             }
+        }
+    }
+
+    private var calendarMonthSmallView: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(widget.customTitle.isEmpty ? Date.now.formatted(.dateTime.month(.wide)) : widget.customTitle)
+                .font(widget.fontFamily.font(size: 12, weight: .semibold))
+                .foregroundStyle(widget.tintColor)
+                .lineLimit(1)
+
+            monthGrid(cellHeight: 14, fontSize: 8.5, spacing: 2)
 
             Spacer(minLength: 0)
         }
@@ -1509,145 +1470,38 @@ public struct WidgetDisplayView: View {
     }
 
     private var calendarMonthMediumView: some View {
-        let cal = Calendar.current
-        let today = Date()
-        let dayNum = cal.component(.day, from: today)
-        let monthNum = cal.component(.month, from: today)
-        let yearNum = cal.component(.year, from: today)
-        let monthStr = DateFormatter().shortMonthSymbols[monthNum - 1].uppercased()
+        let upcoming = Array(calendarService.upcomingEvents.prefix(2))
 
-        let daysInMonth = cal.range(of: .day, in: .month, for: today)?.count ?? 31
+        return HStack(spacing: 14) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(Date.now.formatted(.dateTime.month(.wide)))
+                    .font(widget.fontFamily.font(size: 12, weight: .semibold))
+                    .foregroundStyle(widget.tintColor)
+                    .lineLimit(1)
 
-        var comp = cal.dateComponents([.year, .month], from: today)
-        comp.day = 1
-        let firstDate = cal.date(from: comp) ?? today
-        let firstWeekday = cal.component(.weekday, from: firstDate)
-        let leadingOffset = firstWeekday - 1
-
-        let upcoming = Array(calendarService.events.prefix(2))
-
-        return HStack(spacing: 12) {
-            // Left Half: Month Calendar Grid
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 4) {
-                    Image(systemName: "calendar")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(widget.tintColor)
-
-                    Text("\(monthStr) \(yearNum)")
-                        .font(widget.fontFamily.font(size: 10, weight: .bold))
-                        .foregroundStyle(Color.white.opacity(0.92))
-                        .lineLimit(1)
-
-                    Spacer(minLength: 2)
-
-                    Text("\(dayNum)")
-                        .font(widget.fontFamily.font(size: 8.5, weight: .heavy))
-                        .foregroundStyle(widget.tintColor)
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 1.5)
-                        .background(Color.white.opacity(0.12), in: Capsule())
-                }
-
-                HStack(spacing: 0) {
-                    ForEach(["S", "M", "T", "W", "T", "F", "S"], id: \.self) { d in
-                        Text(d)
-                            .font(.system(size: 8, weight: .bold))
-                            .foregroundStyle(Color.white.opacity(0.55))
-                            .frame(maxWidth: .infinity)
-                    }
-                }
-                .padding(.top, 1)
-
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 7), spacing: 2) {
-                    ForEach(0..<leadingOffset, id: \.self) { _ in
-                        Color.clear
-                            .frame(height: 14)
-                    }
-
-                    ForEach(1...daysInMonth, id: \.self) { d in
-                        let isToday = d == dayNum
-                        ZStack {
-                            if isToday {
-                                Circle()
-                                    .fill(widget.tintColor)
-                                    .frame(width: 15, height: 15)
-                            }
-                            Text("\(d)")
-                                .font(.system(size: 8.5, weight: isToday ? .black : .medium))
-                                .foregroundStyle(isToday ? .white : Color.white.opacity(0.85))
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.7)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 14)
-                    }
-                }
+                monthGrid(cellHeight: 14, fontSize: 8.5, spacing: 2)
 
                 Spacer(minLength: 0)
             }
             .frame(maxWidth: 155)
 
-            // Glass Divider
-            Rectangle()
-                .fill(Color.white.opacity(0.12))
-                .frame(width: 1)
-                .padding(.vertical, 2)
-
-            // Right Half: Today's Schedule & Upcoming Events
-            VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Label("SCHEDULE", systemImage: "clock.fill")
-                        .font(.system(size: 9.5, weight: .bold))
-                        .foregroundStyle(Color.white.opacity(0.85))
-
-                    Spacer()
-
-                    Text("\(calendarService.todayEvents.count) TODAY")
-                        .font(.system(size: 8, weight: .heavy))
-                        .foregroundStyle(widget.tintColor)
-                }
+            VStack(alignment: .leading, spacing: 8) {
+                Text(widget.customTitle.isEmpty ? "Up next" : widget.customTitle)
+                    .font(widget.fontFamily.font(size: 12, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
 
                 if upcoming.isEmpty {
-                    VStack(spacing: 4) {
-                        Spacer()
-                        Image(systemName: "calendar.badge.checkmark")
-                            .font(.system(size: 18))
-                            .foregroundStyle(widget.tintColor)
-                        Text("All Clear Today")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(Color.white.opacity(0.85))
-                        Text("No scheduled events")
-                            .font(.system(size: 9))
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                    }
-                    .frame(maxWidth: .infinity)
+                    Text("No more events today")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
                 } else {
-                    VStack(alignment: .leading, spacing: 6) {
-                        ForEach(upcoming) { event in
-                            HStack(spacing: 6) {
-                                RoundedRectangle(cornerRadius: 2)
-                                    .fill(Color(hex: event.calendarColorHex))
-                                    .frame(width: 3, height: 26)
-
-                                VStack(alignment: .leading, spacing: 1) {
-                                    Text(event.title)
-                                        .font(.system(size: 10.5, weight: .semibold))
-                                        .foregroundStyle(Color.white)
-                                        .lineLimit(1)
-
-                                    Text(event.timeDescription)
-                                        .font(.system(size: 9, weight: .medium))
-                                        .foregroundStyle(.secondary)
-                                        .lineLimit(1)
-                                }
-                                Spacer()
-                            }
-                        }
+                    ForEach(upcoming) { event in
+                        compactEventRow(event)
                     }
-                    Spacer(minLength: 0)
                 }
+
+                Spacer(minLength: 0)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -1655,59 +1509,35 @@ public struct WidgetDisplayView: View {
         .padding(.vertical, 10)
     }
 
+    private func compactEventRow(_ event: GlassCalendarEvent) -> some View {
+        HStack(spacing: 6) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(Color(hex: event.calendarColorHex))
+                .frame(width: 3, height: 26)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(event.title)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+
+                Text(event.timeDescription)
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 0)
+        }
+    }
+
     private var calendarMonthLargeView: some View {
-        let cal = Calendar.current
-        let today = Date()
-        let dayNum = cal.component(.day, from: today)
-        let monthNum = cal.component(.month, from: today)
-        let yearNum = cal.component(.year, from: today)
-        let monthStr = DateFormatter().monthSymbols[monthNum - 1].uppercased()
-
-        let daysInMonth = cal.range(of: .day, in: .month, for: today)?.count ?? 31
-
-        var comp = cal.dateComponents([.year, .month], from: today)
-        comp.day = 1
-        let firstDate = cal.date(from: comp) ?? today
-        let firstWeekday = cal.component(.weekday, from: firstDate)
-        let leadingOffset = firstWeekday - 1
-
-        let upcoming = Array(calendarService.events.prefix(3))
+        let upcoming = Array(calendarService.upcomingEvents.prefix(2))
 
         return VStack(alignment: .leading, spacing: 8) {
-            headerBar(title: widget.customTitle.isEmpty ? "\(monthStr) \(yearNum)" : widget.customTitle, icon: "calendar", badge: "TODAY \(dayNum)")
+            headerBar(title: widget.customTitle.isEmpty ? monthTitle : widget.customTitle, icon: "calendar", badge: "")
 
-            // Day of week headers
-            HStack(spacing: 0) {
-                ForEach(["S", "M", "T", "W", "T", "F", "S"], id: \.self) { d in
-                    Text(d)
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(Color.white.opacity(0.6))
-                        .frame(maxWidth: .infinity)
-                }
-            }
-
-            // Month Grid
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 7), spacing: 4) {
-                ForEach(0..<leadingOffset, id: \.self) { _ in
-                    Color.clear
-                        .frame(height: 20)
-                }
-
-                ForEach(1...daysInMonth, id: \.self) { d in
-                    let isToday = d == dayNum
-                    ZStack {
-                        if isToday {
-                            Circle()
-                                .fill(widget.tintColor)
-                                .frame(width: 22, height: 22)
-                        }
-                        Text("\(d)")
-                            .font(.system(size: 11, weight: isToday ? .black : .regular))
-                            .foregroundStyle(isToday ? .white : Color.white.opacity(0.85))
-                    }
-                    .frame(height: 20)
-                }
-            }
+            monthGrid(cellHeight: 18, fontSize: 11, spacing: 3)
 
             Divider()
                 .padding(.vertical, 2)
@@ -1724,228 +1554,96 @@ public struct WidgetDisplayView: View {
     }
 
     private var calendarMonthExtraLargeView: some View {
-        let cal = Calendar.current
-        let today = Date()
-        let dayNum = cal.component(.day, from: today)
-        let monthNum = cal.component(.month, from: today)
-        let yearNum = cal.component(.year, from: today)
-        let monthStr = DateFormatter().shortMonthSymbols[monthNum - 1].uppercased()
+        let upcoming = Array(calendarService.upcomingEvents.prefix(3))
 
-        let daysInMonth = cal.range(of: .day, in: .month, for: today)?.count ?? 31
+        return VStack(alignment: .leading, spacing: 10) {
+            headerBar(title: widget.customTitle.isEmpty ? monthTitle : widget.customTitle, icon: "calendar", badge: "")
 
-        var comp = cal.dateComponents([.year, .month], from: today)
-        comp.day = 1
-        let firstDate = cal.date(from: comp) ?? today
-        let firstWeekday = cal.component(.weekday, from: firstDate)
-        let leadingOffset = firstWeekday - 1
-        let upcoming = Array(calendarService.events.prefix(3))
+            monthGrid(cellHeight: 30, fontSize: 14, spacing: 6)
 
-        return VStack(alignment: .leading, spacing: 6) {
-            headerBar(
-                title: widget.customTitle.isEmpty ? "\(monthStr) \(yearNum) EXECUTIVE CALENDAR" : widget.customTitle,
-                icon: "calendar",
-                badge: "TODAY \(dayNum)"
-            )
+            Divider()
+                .padding(.vertical, 2)
 
-            HStack(spacing: 14) {
-                // Left: Month Matrix
-                VStack(spacing: 2) {
-                    HStack(spacing: 0) {
-                        ForEach(["S", "M", "T", "W", "T", "F", "S"], id: \.self) { d in
-                            Text(d)
-                                .font(.system(size: 8.5, weight: .bold))
-                                .foregroundStyle(Color.white.opacity(0.6))
-                                .frame(maxWidth: .infinity)
-                        }
-                    }
-
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 7), spacing: 2) {
-                        ForEach(0..<leadingOffset, id: \.self) { _ in
-                            Color.clear.frame(height: 15)
-                        }
-
-                        ForEach(1...daysInMonth, id: \.self) { d in
-                            let isToday = d == dayNum
-                            ZStack {
-                                if isToday {
-                                    Circle()
-                                        .fill(widget.tintColor)
-                                        .frame(width: 16, height: 16)
-                                }
-                                Text("\(d)")
-                                    .font(.system(size: 9, weight: isToday ? .black : .medium))
-                                    .foregroundStyle(isToday ? .white : Color.white.opacity(0.85))
-                                    .lineLimit(1)
-                                    .minimumScaleFactor(0.7)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 15)
-                        }
-                    }
-                }
-                .frame(maxWidth: 165)
-
-                // Divider
-                Rectangle()
-                    .fill(Color.white.opacity(0.12))
-                    .frame(width: 1)
-                    .padding(.vertical, 2)
-
-                // Right: Live Agenda
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack {
-                        Label("UPCOMING AGENDA", systemImage: "clock.fill")
-                            .font(.system(size: 9.5, weight: .bold))
-                            .foregroundStyle(Color.white.opacity(0.85))
-                        Spacer()
-                        Text("\(calendarService.todayEvents.count) TODAY")
-                            .font(.system(size: 8, weight: .heavy))
-                            .foregroundStyle(widget.tintColor)
-                    }
-
-                    if upcoming.isEmpty {
-                        VStack(spacing: 4) {
-                            Spacer()
-                            Image(systemName: "calendar.badge.checkmark")
-                                .font(.system(size: 18))
-                                .foregroundStyle(widget.tintColor)
-                            Text("All Clear Today")
-                                .font(.system(size: 11, weight: .semibold))
-                            Spacer()
-                        }
-                        .frame(maxWidth: .infinity)
-                    } else {
-                        ForEach(upcoming) { event in
-                            calendarEventRow(event)
-                        }
-                        Spacer(minLength: 0)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-        }
-        .padding(12)
-    }
-
-    private var calendarDayView: some View {
-        VStack(alignment: .leading, spacing: widget.size == .small ? 6 : 10) {
-            headerBar(title: widget.customTitle.isEmpty ? "DAY TIMELINE" : widget.customTitle, icon: "list.bullet.below.rectangle", badge: widget.size == .small ? "TODAY" : "HOURLY")
-
-            if widget.size == .small {
-                VStack(spacing: 6) {
-                    HStack(spacing: 8) {
-                        Text("10:00 AM")
-                            .font(.system(size: 10, weight: .bold, design: .monospaced))
-                            .foregroundStyle(.secondary)
-                        Text("Product Keynote")
-                            .font(.caption2)
-                            .fontWeight(.semibold)
-                            .lineLimit(1)
-                        Spacer()
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.caption2)
-                            .foregroundStyle(.green)
-                    }
-                    .padding(6)
-                    .background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-
-                    HStack(spacing: 8) {
-                        Text("01:30 PM")
-                            .font(.system(size: 10, weight: .bold, design: .monospaced))
-                            .foregroundStyle(widget.tintColor)
-                        Text("Design Sync")
-                            .font(.caption2)
-                            .fontWeight(.bold)
-                            .lineLimit(1)
-                        Spacer()
-                        Text("Next")
-                            .font(.system(size: 8, weight: .black))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 4)
-                            .padding(.vertical, 1.5)
-                            .background(widget.tintColor, in: Capsule())
-                    }
-                    .padding(6)
-                    .background(widget.tintColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                }
+            if upcoming.isEmpty {
+                Text("No more events today")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             } else {
-                VStack(spacing: 8) {
-                    HStack(spacing: 10) {
-                        Text("10:00 AM")
-                            .font(.system(size: 11, weight: .bold, design: .monospaced))
-                            .foregroundStyle(.secondary)
-                        Text("Executive Keynote")
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                        Spacer()
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.caption)
-                            .foregroundStyle(.green)
-                    }
-                    .padding(8)
-                    .background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-
-                    HStack(spacing: 10) {
-                        Text("01:30 PM")
-                            .font(.system(size: 11, weight: .bold, design: .monospaced))
-                            .foregroundStyle(widget.tintColor)
-                        Text("Liquid Glass Design Sync")
-                            .font(.caption)
-                            .fontWeight(.bold)
-                        Spacer()
-                        Text("Next")
-                            .font(.system(size: 9, weight: .black))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(widget.tintColor, in: Capsule())
-                    }
-                    .padding(8)
-                    .background(widget.tintColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-
-                    HStack(spacing: 10) {
-                        Text("04:00 PM")
-                            .font(.system(size: 11, weight: .bold, design: .monospaced))
-                            .foregroundStyle(.secondary)
-                        Text("Engineering Architecture Review")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                        Spacer()
-                    }
-                    .padding(8)
-                    .background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-
-                    if widget.size == .extraLarge {
-                        HStack(spacing: 10) {
-                            Text("06:00 PM")
-                                .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                .foregroundStyle(.secondary)
-                            Text("Team Wrap-up & Q&A")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                            Spacer()
-                        }
-                        .padding(8)
-                        .background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-
-                        HStack(spacing: 10) {
-                            Text("08:00 PM")
-                                .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                .foregroundStyle(.secondary)
-                            Text("Evening Focus Session")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                            Spacer()
-                        }
-                        .padding(8)
-                        .background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                VStack(spacing: 6) {
+                    ForEach(upcoming) { event in
+                        calendarEventRowLarge(event)
                     }
                 }
             }
 
             Spacer(minLength: 0)
         }
-        .padding(widget.size == .small ? 12 : 16)
+        .padding(16)
+    }
+
+    private var calendarDayView: some View {
+        let isCompact = widget.size == .small
+        let limit: Int = {
+            switch widget.size {
+            case .small, .medium: return 2
+            case .large: return 4
+            case .extraLarge: return 7
+            }
+        }()
+        let events = Array(calendarService.todayEvents.prefix(limit))
+
+        return VStack(alignment: .leading, spacing: isCompact ? 6 : 10) {
+            headerBar(title: widget.customTitle.isEmpty ? "Today" : widget.customTitle, icon: "list.bullet.below.rectangle", badge: "")
+
+            if events.isEmpty {
+                Spacer(minLength: 0)
+                Text("No events today")
+                    .font(isCompact ? .caption2 : .caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                VStack(spacing: isCompact ? 6 : 8) {
+                    ForEach(events) { event in
+                        timelineRow(event, compact: isCompact)
+                    }
+                }
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(isCompact ? 12 : 16)
+    }
+
+    private func timelineRow(_ event: GlassCalendarEvent, compact: Bool) -> some View {
+        let isNext = event.id == calendarService.nextUpcomingEvent?.id
+        let isPast = event.endDate < Date.now
+
+        return HStack(spacing: compact ? 6 : 10) {
+            Text(event.startFormatted)
+                .font(.system(size: compact ? 10 : 11, weight: .semibold))
+                .monospacedDigit()
+                .foregroundStyle(isNext ? widget.tintColor : .secondary)
+                .lineLimit(1)
+                .frame(width: compact ? 46 : 60, alignment: .leading)
+
+            Text(event.title)
+                .font(compact ? .caption2 : .caption)
+                .fontWeight(isNext ? .semibold : .regular)
+                .foregroundStyle(isPast ? .secondary : .primary)
+                .lineLimit(1)
+
+            Spacer(minLength: 0)
+
+            if isPast {
+                Image(systemName: "checkmark")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(compact ? 6 : 8)
+        .background(
+            isNext ? widget.tintColor.opacity(0.18) : Color.white.opacity(0.05),
+            in: RoundedRectangle(cornerRadius: compact ? 8 : 10, style: .continuous)
+        )
     }
 
     // MARK: - 5. NOTES CATEGORY VIEWS
@@ -1953,7 +1651,7 @@ public struct WidgetDisplayView: View {
     private var notesQuickMemoView: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                headerBar(title: widget.customTitle.isEmpty ? "QUICK MEMO" : widget.customTitle, icon: "note.text", badge: "PINNED")
+                headerBar(title: widget.customTitle.isEmpty ? "Note" : widget.customTitle, icon: "note.text", badge: "")
                 Spacer()
                 Button {
                     notesService.openAppleNotesApp()
@@ -1986,42 +1684,30 @@ public struct WidgetDisplayView: View {
 
             Spacer()
 
-            HStack {
-                Text("Synced with Apple Notes")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Image(systemName: "pin.fill")
-                    .font(.caption2)
-                    .foregroundStyle(widget.tintColor)
-            }
         }
         .padding(widget.size == .small ? 12 : 16)
     }
 
     private var notesScratchpadView: some View {
         VStack(alignment: .leading, spacing: 8) {
-            headerBar(title: widget.customTitle.isEmpty ? "SCRATCHPAD" : widget.customTitle, icon: "square.and.pencil", badge: "DRAFT")
+            headerBar(title: widget.customTitle.isEmpty ? "Scratchpad" : widget.customTitle, icon: "square.and.pencil", badge: "")
 
             VStack(alignment: .leading, spacing: 6) {
+                let allItems = [
+                    "Call the plumber",
+                    "Book flights for May",
+                    "Pick up dry cleaning",
+                    "Renew passport",
+                    "Plan weekend hike",
+                    "Return library books",
+                    "Water the plants"
+                ]
                 let items: [String] = {
                     switch widget.size {
-                    case .small:
-                        return ["• 3-Layer Glass Refraction", "• Zero-Launch Widgets"]
-                    case .medium:
-                        return ["• 3-Layer Glass Refraction", "• Zero-Launch Widgets", "• HealthKit & EventKit Sync"]
-                    case .large:
-                        return ["• 3-Layer Glass Refraction", "• Zero-Launch Widgets", "• HealthKit & EventKit Sync", "• Dynamic Gyroscope Specular", "• Native SpringBoard Materials"]
-                    case .extraLarge:
-                        return [
-                            "• 3-Layer Glass Refraction Architecture",
-                            "• Zero-Launch Instant Widgets Pipeline",
-                            "• Apple HealthKit & EventKit Live Sync",
-                            "• Dynamic Gyroscope Specular Sheen Overcoat",
-                            "• Native SpringBoard Glass Compositor",
-                            "• Full-Screen Adaptive Canvas",
-                            "• Isolated Size-Slot Customization"
-                        ]
+                    case .small: return Array(allItems.prefix(2)).map { "• \($0)" }
+                    case .medium: return Array(allItems.prefix(3)).map { "• \($0)" }
+                    case .large: return Array(allItems.prefix(5)).map { "• \($0)" }
+                    case .extraLarge: return allItems.map { "• \($0)" }
                     }
                 }()
 
@@ -2041,7 +1727,7 @@ public struct WidgetDisplayView: View {
 
     private var alarmsNextView: some View {
         VStack(alignment: .leading, spacing: 8) {
-            headerBar(title: widget.customTitle.isEmpty ? "WAKE-UP ALARM" : widget.customTitle, icon: "alarm.fill", badge: widget.isToggled ? "ARMED" : "OFF")
+            headerBar(title: widget.customTitle.isEmpty ? "Alarm" : widget.customTitle, icon: "alarm.fill", badge: "")
 
             Spacer()
 
@@ -2051,8 +1737,9 @@ public struct WidgetDisplayView: View {
 
             if widget.size == .extraLarge || widget.size == .large {
                 HStack(spacing: 8) {
-                    ForEach(["M", "T", "W", "T", "F", "S", "S"], id: \.self) { day in
-                        Text(day)
+                    let symbols = Calendar.current.veryShortStandaloneWeekdaySymbols
+                    ForEach(symbols.indices, id: \.self) { index in
+                        Text(symbols[index])
                             .font(.system(size: 10, weight: .bold))
                             .foregroundStyle(widget.isToggled ? widget.tintColor : .secondary)
                             .padding(.horizontal, 6)
@@ -2064,7 +1751,7 @@ public struct WidgetDisplayView: View {
             }
 
             HStack {
-                Text(alarmsService.nextAlarm?.label ?? "Daily Alarm")
+                Text(alarmsService.nextAlarm?.label ?? "Alarm")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
@@ -2095,7 +1782,7 @@ public struct WidgetDisplayView: View {
             Circle()
                 .fill(widget.isToggled ? Color.green : Color.secondary)
                 .frame(width: 8, height: 8)
-            Text(widget.isToggled ? "ON" : "OFF")
+            Text(widget.isToggled ? "On" : "Off")
                 .font(.caption2)
                 .fontWeight(.bold)
                 .foregroundStyle(widget.isToggled ? .primary : .secondary)
@@ -2107,7 +1794,7 @@ public struct WidgetDisplayView: View {
 
     private var alarmsHubView: some View {
         VStack(alignment: .leading, spacing: 8) {
-            headerBar(title: widget.customTitle.isEmpty ? "ALARM HUB" : widget.customTitle, icon: "bell.badge.fill", badge: "SCHEDULE")
+            headerBar(title: widget.customTitle.isEmpty ? "Alarms" : widget.customTitle, icon: "bell.badge.fill", badge: "")
 
             if widget.size == .extraLarge {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
@@ -2123,9 +1810,6 @@ public struct WidgetDisplayView: View {
                         .font(.caption2)
                         .foregroundStyle(widget.tintColor)
                     Spacer()
-                    Text("Apple Clock Synced")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
                 }
             } else if widget.size == .large {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
@@ -2185,9 +1869,9 @@ public struct WidgetDisplayView: View {
 
     private var legacyQuickHubView: some View {
         VStack(alignment: .leading, spacing: 8) {
-            headerBar(title: widget.customTitle, icon: "switch.2", badge: "HUB")
+            headerBar(title: widget.customTitle, icon: "switch.2", badge: "")
             Spacer()
-            Text("Counter: \(widget.counterValue)")
+            Text("Count \(widget.counterValue.formatted())")
                 .font(.headline)
             Spacer()
         }
@@ -2200,9 +1884,9 @@ public struct WidgetDisplayView: View {
 
     private var legacyVitalsView: some View {
         VStack(alignment: .leading, spacing: 8) {
-            headerBar(title: widget.customTitle, icon: "battery.100.bolt", badge: "SYSTEM")
+            headerBar(title: widget.customTitle, icon: "battery.100.bolt", badge: "")
             Spacer()
-            Text("Battery: 98% Normal")
+            Text("Battery")
                 .font(.headline)
             Spacer()
         }
@@ -2213,25 +1897,15 @@ public struct WidgetDisplayView: View {
     private func headerBar(title: String, icon: String, badge: String) -> some View {
         HStack(spacing: 6) {
             Label(title, systemImage: icon)
-                .font(widget.fontFamily.font(size: widget.size == .small ? 10 : 11, weight: .bold))
+                .font(widget.fontFamily.font(size: widget.size == .small ? 12 : 13, weight: .semibold))
                 .foregroundStyle(Color.white.opacity(0.88))
-                .textCase(.uppercase)
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
 
             Spacer(minLength: 2)
 
             if !badge.isEmpty {
-                let badgeText: String = {
-                    if widget.size == .small {
-                        if badge.hasPrefix("TODAY ") {
-                            return String(badge.dropFirst(6))
-                        } else if badge.count > 6 {
-                            return String(badge.prefix(4))
-                        }
-                    }
-                    return badge
-                }()
+                let badgeText = badge
 
                 if isInteractivePreview {
                     Button {
@@ -2252,15 +1926,37 @@ public struct WidgetDisplayView: View {
 
     private func headerBadge(_ text: String) -> some View {
         Text(text)
-            .font(widget.fontFamily.font(size: 9, weight: .black))
+            .font(widget.fontFamily.font(size: 11, weight: .semibold))
             .foregroundStyle(widget.tintColor)
             .lineLimit(1)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2.5)
-            .background(Color.white.opacity(0.12), in: Capsule())
-            .overlay(
-                Capsule()
-                    .strokeBorder(widget.tintColor.opacity(0.35), lineWidth: 0.5)
-            )
+    }
+}
+
+// MARK: - Month Layout
+
+/// Locale-aware layout for a month grid.
+/// Leading blanks get negative IDs so they never collide with day numbers inside `ForEach`.
+struct MonthGrid {
+    struct Cell: Identifiable {
+        let id: Int
+        let day: Int?
+    }
+
+    let cells: [Cell]
+    let weekdaySymbols: [String]
+    let today: Int
+
+    init(date: Date = .now, calendar: Calendar = .current) {
+        let firstOfMonth = calendar.dateInterval(of: .month, for: date)?.start ?? date
+        let dayCount = calendar.range(of: .day, in: .month, for: date)?.count ?? 30
+        let leadingBlanks = (calendar.component(.weekday, from: firstOfMonth) - calendar.firstWeekday + 7) % 7
+
+        cells = (0..<leadingBlanks).map { Cell(id: -1 - $0, day: nil) }
+            + (1...dayCount).map { Cell(id: $0, day: $0) }
+
+        let symbols = calendar.veryShortStandaloneWeekdaySymbols
+        let start = calendar.firstWeekday - 1
+        weekdaySymbols = Array(symbols[start...] + symbols[..<start])
+        today = calendar.component(.day, from: date)
     }
 }

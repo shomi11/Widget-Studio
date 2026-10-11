@@ -1,19 +1,13 @@
 import SwiftUI
 
-/// Preset Gallery offering curated Liquid Glass styles categorized across the 6 core Apple apps:
-/// Health, Clock, Reminders, Calendar, Notes, and Alarms. Enforces permission checks before adding widgets.
+/// Curated widget designs grouped by category, plus matching wallpapers.
 public struct PresetGalleryView: View {
     @ObservedObject var store: WidgetStore
-    @Binding var isTabBarMinimized: Bool
-    @ObservedObject var permissionManager = CategoryPermissionManager.shared
 
-    @State private var selectedCategoryFilter: WidgetCategory? = nil
-    @State private var addedWidgetAlertMessage: String = ""
-    @State private var showAddedAlert: Bool = false
-    @State private var pendingPresetToAdd: WidgetConfig? = nil
-    @State private var permissionPromptCategory: WidgetCategory? = nil
+    @State private var categoryFilter: WidgetCategory? = nil
+    @State private var editorRequest: EditorRequest? = nil
 
-    private let curatedGallery: [WidgetConfig] = [
+    static let curatedGallery: [WidgetConfig] = [
         // 1. Health Category (Apple HealthKit)
         WidgetConfig(
             name: "Obsidian Health Rings",
@@ -25,8 +19,8 @@ public struct PresetGalleryView: View {
             specularIntensity: 0.98,
             showEdgeShine: true,
             fontFamily: .sfRounded,
-            customTitle: "HEALTHKIT VITALS",
-            customSubtitle: "Goal: 10,000 steps",
+            customTitle: "",
+            customSubtitle: "",
             counterValue: 8420,
             isToggled: true
         ),
@@ -40,8 +34,8 @@ public struct PresetGalleryView: View {
             specularIntensity: 0.92,
             showEdgeShine: true,
             fontFamily: .sfRounded,
-            customTitle: "SLEEP & RECOVERY",
-            customSubtitle: "Target: 8.0 hrs",
+            customTitle: "",
+            customSubtitle: "",
             counterValue: 89,
             isToggled: true
         ),
@@ -55,8 +49,8 @@ public struct PresetGalleryView: View {
             specularIntensity: 0.90,
             showEdgeShine: true,
             fontFamily: .sfRounded,
-            customTitle: "BLOOD OXYGEN",
-            customSubtitle: "SpO2 Saturation",
+            customTitle: "",
+            customSubtitle: "",
             counterValue: 98,
             isToggled: true
         ),
@@ -70,8 +64,8 @@ public struct PresetGalleryView: View {
             specularIntensity: 0.90,
             showEdgeShine: true,
             fontFamily: .sfRounded,
-            customTitle: "HYDRATION GOAL",
-            customSubtitle: "2,500 mL / Day",
+            customTitle: "",
+            customSubtitle: "",
             counterValue: 1850,
             isToggled: true
         ),
@@ -85,8 +79,8 @@ public struct PresetGalleryView: View {
             specularIntensity: 0.85,
             showEdgeShine: true,
             fontFamily: .sfRounded,
-            customTitle: "PULSE VITALS",
-            customSubtitle: "Resting: 68 BPM",
+            customTitle: "",
+            customSubtitle: "",
             counterValue: 72,
             isToggled: true
         ),
@@ -100,8 +94,8 @@ public struct PresetGalleryView: View {
             specularIntensity: 0.96,
             showEdgeShine: true,
             fontFamily: .sfRounded,
-            customTitle: "VITALS TELEMETRY",
-            customSubtitle: "Live HealthKit Matrix",
+            customTitle: "",
+            customSubtitle: "",
             counterValue: 72,
             isToggled: true
         ),
@@ -117,8 +111,8 @@ public struct PresetGalleryView: View {
             specularIntensity: 0.94,
             showEdgeShine: true,
             fontFamily: .sfMono,
-            customTitle: "LOCAL • TIME",
-            customSubtitle: "Atomic Time Sync",
+            customTitle: "",
+            customSubtitle: "",
             counterValue: 0,
             isToggled: true
         ),
@@ -132,8 +126,8 @@ public struct PresetGalleryView: View {
             specularIntensity: 0.90,
             showEdgeShine: true,
             fontFamily: .sfRounded,
-            customTitle: "WORLD CLOCK MATRIX",
-            customSubtitle: "TYO • LON • NYC • SFO",
+            customTitle: "",
+            customSubtitle: "",
             counterValue: 4,
             isToggled: true
         ),
@@ -149,8 +143,8 @@ public struct PresetGalleryView: View {
             specularIntensity: 0.88,
             showEdgeShine: true,
             fontFamily: .sfRounded,
-            customTitle: "APPLE REMINDERS",
-            customSubtitle: "Synced with Apple Reminders",
+            customTitle: "",
+            customSubtitle: "",
             counterValue: 4,
             isToggled: false
         ),
@@ -164,8 +158,8 @@ public struct PresetGalleryView: View {
             specularIntensity: 0.92,
             showEdgeShine: true,
             fontFamily: .sfRounded,
-            customTitle: "APPLE REMINDERS",
-            customSubtitle: "Interactive task list",
+            customTitle: "",
+            customSubtitle: "",
             counterValue: 5,
             isToggled: false
         ),
@@ -179,8 +173,8 @@ public struct PresetGalleryView: View {
             specularIntensity: 0.85,
             showEdgeShine: true,
             fontFamily: .sfRounded,
-            customTitle: "TASKS TODAY",
-            customSubtitle: "4 Completed",
+            customTitle: "",
+            customSubtitle: "",
             counterValue: 4,
             isToggled: true
         ),
@@ -196,8 +190,8 @@ public struct PresetGalleryView: View {
             specularIntensity: 0.92,
             showEdgeShine: true,
             fontFamily: .sfRounded,
-            customTitle: "APPLE CALENDAR",
-            customSubtitle: "Executive Keynote & Sync",
+            customTitle: "",
+            customSubtitle: "",
             counterValue: 4,
             isToggled: true
         ),
@@ -211,8 +205,8 @@ public struct PresetGalleryView: View {
             specularIntensity: 0.90,
             showEdgeShine: true,
             fontFamily: .sfRounded,
-            customTitle: "MONTH SCHEDULE",
-            customSubtitle: "Full calendar agenda",
+            customTitle: "",
+            customSubtitle: "",
             counterValue: 4,
             isToggled: true
         ),
@@ -226,8 +220,8 @@ public struct PresetGalleryView: View {
             specularIntensity: 0.86,
             showEdgeShine: true,
             fontFamily: .sfRounded,
-            customTitle: "NEXT EVENT",
-            customSubtitle: "In 45 minutes",
+            customTitle: "",
+            customSubtitle: "",
             counterValue: 1,
             isToggled: true
         ),
@@ -243,8 +237,8 @@ public struct PresetGalleryView: View {
             specularIntensity: 0.92,
             showEdgeShine: true,
             fontFamily: .sfRounded,
-            customTitle: "APPLE NOTES",
-            customSubtitle: "Synced with Apple Notes",
+            customTitle: "",
+            customSubtitle: "",
             counterValue: 3,
             isToggled: false
         ),
@@ -258,8 +252,8 @@ public struct PresetGalleryView: View {
             specularIntensity: 0.82,
             showEdgeShine: true,
             fontFamily: .sfRounded,
-            customTitle: "PINNED NOTE",
-            customSubtitle: "Executive highlights",
+            customTitle: "",
+            customSubtitle: "",
             counterValue: 1,
             isToggled: true
         ),
@@ -275,8 +269,8 @@ public struct PresetGalleryView: View {
             specularIntensity: 0.88,
             showEdgeShine: true,
             fontFamily: .sfRounded,
-            customTitle: "MORNING WAKE",
-            customSubtitle: "7:00 AM Active",
+            customTitle: "",
+            customSubtitle: "",
             counterValue: 7,
             isToggled: true
         ),
@@ -290,231 +284,106 @@ public struct PresetGalleryView: View {
             specularIntensity: 0.95,
             showEdgeShine: true,
             fontFamily: .sfMono,
-            customTitle: "ALARM CONSOLE",
-            customSubtitle: "Scheduled Chimes",
+            customTitle: "",
+            customSubtitle: "",
             counterValue: 2,
             isToggled: true
         )
     ]
 
-    public init(store: WidgetStore = .shared, isTabBarMinimized: Binding<Bool> = .constant(false)) {
+    public init(store: WidgetStore) {
         self.store = store
-        self._isTabBarMinimized = isTabBarMinimized
     }
 
-    private var filteredGallery: [WidgetConfig] {
-        if let cat = selectedCategoryFilter {
-            return curatedGallery.filter { $0.category == cat }
+    private var sections: [(category: WidgetCategory, presets: [WidgetConfig])] {
+        let available = Self.curatedGallery.filter { $0.size.isAvailableOnCurrentDevice }
+        return WidgetCategory.allCases.compactMap { category in
+            guard categoryFilter == nil || categoryFilter == category else { return nil }
+            let presets = available.filter { $0.category == category }
+            return presets.isEmpty ? nil : (category, presets)
         }
-        return curatedGallery
     }
 
     public var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Category Filter Pills
-                    categoryFilterRow
-
-                    // Hero Intro Card
-                    heroIntroCard
-
-                    // Curated Presets List
-                    ForEach(filteredGallery) { preset in
-                        presetCard(preset: preset)
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 10)
-                .padding(.bottom, 24)
-            }
-            .scrollTargetBehavior(.viewAligned(limitBehavior: .never))
-            .onScrollGeometryChange(for: CGFloat.self) { geo in
-                geo.contentOffset.y
-            } action: { oldValue, newValue in
-                let diff = newValue - oldValue
-                if diff > 15 && newValue > 40 {
-                    if !isTabBarMinimized {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                            isTabBarMinimized = true
+            List {
+                if categoryFilter == nil {
+                    Section {
+                        NavigationLink {
+                            WallpaperStudioView()
+                        } label: {
+                            Label("Wallpapers", systemImage: "photo.on.rectangle")
                         }
                     }
-                } else if diff < -15 {
-                    if isTabBarMinimized {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                            isTabBarMinimized = false
+                }
+
+                ForEach(sections, id: \.category) { section in
+                    Section(section.category.rawValue) {
+                        ForEach(section.presets) { preset in
+                            presetRow(preset)
                         }
                     }
                 }
             }
-            .navigationTitle("Preset Gallery")
-            .toolbarBackgroundVisibility(.hidden, for: .navigationBar)
-            .toolbarMinimizationBehavior(.onScrollDown, for: .navigationBar)
-            .alert("Preset Added", isPresented: $showAddedAlert) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(addedWidgetAlertMessage)
-            }
-            .sheet(item: $permissionPromptCategory) { category in
-                CategoryPermissionSheet(category: category) {
-                    if let pending = pendingPresetToAdd {
-                        store.add(widget: pending)
-                        addedWidgetAlertMessage = "Added \(pending.name) to your widgets library!"
-                        showAddedAlert = true
-                        pendingPresetToAdd = nil
-                    }
-                }
-            }
-        }
-    }
-
-    private var heroIntroCard: some View {
-        HStack(spacing: 16) {
-            Image(systemName: "sparkles.rectangle.stack.fill")
-                .font(.system(size: 38))
-                .foregroundStyle(.cyan)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Apple Ecosystem Presets")
-                    .font(.headline)
-                    .fontWeight(.bold)
-
-                Text("Pick from 16 curated designs pre-calibrated for HealthKit, EventKit Calendar, Reminders, Notes, and Alarms.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer()
-        }
-        .padding(16)
-        .background(
-            LinearGradient(
-                colors: [Color.cyan.opacity(0.12), Color.purple.opacity(0.08), Color.clear],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            ),
-            in: RoundedRectangle(cornerRadius: 20, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .strokeBorder(Color.cyan.opacity(0.2), lineWidth: 1)
-        )
-    }
-
-    // MARK: - Category Filter Pills
-    private var categoryFilterRow: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                Button {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        selectedCategoryFilter = nil
-                    }
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "sparkles")
-                        Text("All Presets")
-                    }
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .background(
-                        selectedCategoryFilter == nil ? Color.blue : Color.primary.opacity(0.06),
-                        in: Capsule()
-                    )
-                    .foregroundStyle(selectedCategoryFilter == nil ? Color.white : Color.primary)
-                }
-                .buttonStyle(.plain)
-
-                ForEach(WidgetCategory.allCases) { category in
-                    let isSelected = selectedCategoryFilter == category
-                    let tint = Color(hex: category.defaultTintHex)
-
-                    Button {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            selectedCategoryFilter = category
+            .listStyle(.insetGrouped)
+            .headerProminence(.increased)
+            .scrollEdgeEffectStyle(.soft, for: .all)
+            .contentMargins(.bottom, 24, for: .scrollContent)
+            .navigationTitle("Gallery")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Picker("Category", selection: $categoryFilter) {
+                            Text("All Categories")
+                                .tag(WidgetCategory?.none)
+                            ForEach(WidgetCategory.allCases) { category in
+                                Label(category.rawValue, systemImage: category.icon)
+                                    .tag(Optional(category))
+                            }
                         }
                     } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: category.icon)
-                            Text(category.rawValue)
-                        }
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(
-                            isSelected ? tint : Color.primary.opacity(0.06),
-                            in: Capsule()
+                        Label(
+                            "Filter",
+                            systemImage: categoryFilter == nil
+                                ? "line.3.horizontal.decrease"
+                                : "line.3.horizontal.decrease.circle.fill"
                         )
-                        .foregroundStyle(isSelected ? Color.white : Color.primary)
                     }
-                    .buttonStyle(.plain)
                 }
             }
-            .padding(.vertical, 4)
+            .sheet(item: $editorRequest) { request in
+                WidgetEditorView(widget: request.widget, isNew: true, store: store)
+            }
         }
     }
 
-    // MARK: - Preset Preview Card
-    private func presetCard(preset: WidgetConfig) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                VStack(alignment: .leading, spacing: 3) {
-                    HStack(spacing: 6) {
-                        Image(systemName: preset.category.icon)
-                            .font(.caption)
-                            .foregroundStyle(preset.tintColor)
-                        Text(preset.name)
-                            .font(.headline)
-                            .fontWeight(.bold)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.85)
-                    }
+    private func presetRow(_ preset: WidgetConfig) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            WidgetPreview(widget: preset)
+                .accessibilityHidden(true)
 
-                    Text("\(preset.category.appleApp) • \(preset.size.rawValue) • \(preset.backgroundMode.rawValue)")
-                        .font(.caption)
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(preset.name)
+                        .font(.headline)
+                    Text("\(preset.size.rawValue) · \(preset.type.displayName)")
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.85)
                 }
 
                 Spacer()
 
-                Button {
-                    attemptAddPreset(preset)
-                } label: {
-                    Label("Add Preset", systemImage: "plus")
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .lineLimit(1)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 7)
-                        .background(preset.tintColor, in: Capsule())
-                        .foregroundStyle(.white)
+                Button("Add") {
+                    var copy = preset
+                    copy.id = UUID()
+                    editorRequest = EditorRequest(widget: copy, isNew: true)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.bordered)
+                .accessibilityLabel("Add \(preset.name)")
             }
-
-            // Interactive Glass Preview
-            ZStack {
-                WidgetDisplayView(widget: preset, isInteractivePreview: true)
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: preset.size.previewHeight + 20)
         }
-        .padding(18)
-        .background(Color.primary.opacity(0.03), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-    }
-
-    private func attemptAddPreset(_ preset: WidgetConfig) {
-        if permissionManager.isAuthorized(for: preset.category) {
-            store.add(widget: preset)
-            addedWidgetAlertMessage = "Added \(preset.name) to your widgets library!"
-            showAddedAlert = true
-        } else {
-            pendingPresetToAdd = preset
-            permissionPromptCategory = preset.category
-        }
+        .padding(.vertical, 8)
+        .listRowSeparator(.hidden)
+        .listRowBackground(Color.clear)
     }
 }

@@ -52,10 +52,10 @@ public final class AlarmsService: ObservableObject {
 
     private func loadDefaultAlarms() {
         alarms = [
-            GlassAlarmItem(label: "Morning Wakeup & Sunlight", hour: 7, minute: 0, isEnabled: true, repeatDays: ["Everyday"]),
-            GlassAlarmItem(label: "Deep Work Sprint", hour: 9, minute: 30, isEnabled: true, repeatDays: ["Mon", "Wed", "Fri"]),
-            GlassAlarmItem(label: "Afternoon Wind-down", hour: 17, minute: 45, isEnabled: false, repeatDays: ["Weekdays"]),
-            GlassAlarmItem(label: "Bedtime Routine", hour: 22, minute: 15, isEnabled: true, repeatDays: ["Everyday"])
+            GlassAlarmItem(label: "Wake up", hour: 7, minute: 0, isEnabled: true, repeatDays: ["Everyday"]),
+            GlassAlarmItem(label: "Gym", hour: 9, minute: 30, isEnabled: true, repeatDays: ["Mon", "Wed", "Fri"]),
+            GlassAlarmItem(label: "Leave work", hour: 17, minute: 45, isEnabled: false, repeatDays: ["Weekdays"]),
+            GlassAlarmItem(label: "Bedtime", hour: 22, minute: 15, isEnabled: true, repeatDays: ["Everyday"])
         ]
     }
 

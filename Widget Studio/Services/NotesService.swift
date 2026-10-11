@@ -38,18 +38,18 @@ public final class NotesService: ObservableObject {
     public init() {
         notes = [
             GlassNoteItem(
-                title: "Product Design Ideas",
-                content: "1. Refractive dynamic materials\n2. Liquid Glass widget layers\n3. Haptic dial controls",
+                title: "Weekend plans",
+                content: "Farmers market in the morning, then a bike ride along the river.",
                 isPinned: true
             ),
             GlassNoteItem(
-                title: "Daily Reflections",
-                content: "Water shapes itself to the vessel, yet cuts through stone.",
+                title: "Book list",
+                content: "• The Overstory\n• Piranesi\n• Project Hail Mary",
                 isPinned: true
             ),
             GlassNoteItem(
-                title: "Grocery Essentials",
-                content: "• Matcha powder\n• Oat milk\n• Fresh berries",
+                title: "Groceries",
+                content: "• Oat milk\n• Berries\n• Bread",
                 isPinned: false
             )
         ]

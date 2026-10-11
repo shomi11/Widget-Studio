@@ -121,32 +121,27 @@ public struct LiquidGlassModifier: ViewModifier {
     }
 }
 
-// MARK: - Comprehensive Widget Surface & Customizable Background Renderer
+// MARK: - Widget Surface
 
-/// Dynamic background layer supporting Liquid Glass, Solid Colors, Linear/Radial Gradients, and Mesh Gradients
+/// Background layer supporting glass-style fills, solid colors, linear/radial gradients, and mesh gradients.
+/// Shared by in-app previews and the WidgetKit extension (`containerBackground`), so both render identically.
 public struct WidgetBackgroundView: View {
     public let config: WidgetConfig
     public let cornerRadius: CGFloat
-    public let isInteractivePreview: Bool
-
-    @ObservedObject private var motion = MotionManager.shared
 
     public init(config: WidgetConfig, cornerRadius: CGFloat, isInteractivePreview: Bool = false) {
         self.config = config
         self.cornerRadius = cornerRadius
-        self.isInteractivePreview = isInteractivePreview
     }
 
     public var body: some View {
-        let offset = isInteractivePreview ? motion.normalizedOffset : .zero
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
 
         ZStack {
-            // 1. Base Surface Fill
             baseSurfaceLayer
                 .opacity(config.backgroundOpacity)
 
-            // 2. Liquid Glass Specular Glare Overcoat (if enabled)
+            // Shine
             if config.glassOverlayEnabled && config.specularIntensity > 0 {
                 shape
                     .fill(
@@ -156,10 +151,7 @@ public struct WidgetBackgroundView: View {
                                 Color.white.opacity(0.10 * config.specularIntensity),
                                 Color.clear
                             ],
-                            center: UnitPoint(
-                                x: 0.35 + offset.width * 0.25,
-                                y: 0.25 + offset.height * 0.25
-                            ),
+                            center: UnitPoint(x: 0.35, y: 0.25),
                             startRadius: 8,
                             endRadius: 180
                         )
@@ -167,7 +159,7 @@ public struct WidgetBackgroundView: View {
                     .blendMode(.screen)
             }
 
-            // 3. Liquid Rim Highlight (Specular edge refraction)
+            // Edge glow
             if config.showEdgeShine {
                 shape
                     .strokeBorder(
@@ -178,14 +170,8 @@ public struct WidgetBackgroundView: View {
                                 Color.white.opacity(0.15),
                                 Color.clear
                             ],
-                            startPoint: UnitPoint(
-                                x: 0.2 + offset.width * 0.3,
-                                y: 0.1 + offset.height * 0.3
-                            ),
-                            endPoint: UnitPoint(
-                                x: 0.8 - offset.width * 0.3,
-                                y: 0.9 - offset.height * 0.3
-                            )
+                            startPoint: UnitPoint(x: 0.2, y: 0.1),
+                            endPoint: UnitPoint(x: 0.8, y: 0.9)
                         ),
                         lineWidth: 1.5
                     )
@@ -249,47 +235,23 @@ public struct WidgetBackgroundView: View {
     }
 }
 
-/// View modifier applying the full widget surface styling
+/// Applies the widget background and clips to the widget's corner shape.
+/// Widgets are content, not controls, so this deliberately does not use `glassEffect`.
 public struct WidgetSurfaceModifier: ViewModifier {
     public let config: WidgetConfig
     public let cornerRadius: CGFloat
-    public let motionReactive: Bool
 
-    @ObservedObject private var motion = MotionManager.shared
-
-    public init(config: WidgetConfig, cornerRadius: CGFloat, motionReactive: Bool = true) {
+    public init(config: WidgetConfig, cornerRadius: CGFloat, motionReactive: Bool = false) {
         self.config = config
         self.cornerRadius = cornerRadius
-        self.motionReactive = motionReactive
     }
 
     public func body(content: Content) -> some View {
-        let offset = motionReactive ? motion.normalizedOffset : .zero
-        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-
-        Group {
-            if motionReactive && config.backgroundMode == .liquidGlass {
-                content
-                    .glassEffect(config.glassStyle == .ultraClear ? .clear : .regular, in: shape)
-                    .background {
-                        WidgetBackgroundView(config: config, cornerRadius: cornerRadius, isInteractivePreview: true)
-                    }
-            } else {
-                content
-                    .background {
-                        WidgetBackgroundView(config: config, cornerRadius: cornerRadius, isInteractivePreview: motionReactive)
-                    }
+        content
+            .background {
+                WidgetBackgroundView(config: config, cornerRadius: cornerRadius)
             }
-        }
-        .clipShape(shape)
-        .shadow(
-            color: config.backgroundMode == .solidColor
-                ? Color(hex: config.solidColorHex).opacity(0.35)
-                : (config.glassStyle == .blackGlass ? Color.black.opacity(0.4) : config.tintColor.opacity(0.20)),
-            radius: 18,
-            x: offset.width * 4,
-            y: 10 + offset.height * 4
-        )
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
     }
 }
 
@@ -318,15 +280,8 @@ public extension View {
 
     func widgetSurface(
         config: WidgetConfig,
-        cornerRadius: CGFloat = 26.0,
-        motionReactive: Bool = true
+        cornerRadius: CGFloat = 26.0
     ) -> some View {
-        modifier(
-            WidgetSurfaceModifier(
-                config: config,
-                cornerRadius: cornerRadius,
-                motionReactive: motionReactive
-            )
-        )
+        modifier(WidgetSurfaceModifier(config: config, cornerRadius: cornerRadius))
     }
 }

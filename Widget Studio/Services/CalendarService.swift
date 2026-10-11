@@ -86,6 +86,12 @@ public final class CalendarService: ObservableObject {
         events.first { $0.endDate > Date() } ?? events.first
     }
 
+    /// Events that haven't ended yet, soonest first.
+    public var upcomingEvents: [GlassCalendarEvent] {
+        let now = Date()
+        return events.filter { $0.endDate > now }
+    }
+
     public var todayEvents: [GlassCalendarEvent] {
         let calendar = Calendar.current
         return events.filter { calendar.isDateInToday($0.startDate) || $0.isAllDay }
@@ -95,52 +101,56 @@ public final class CalendarService: ObservableObject {
         let calendar = Calendar.current
         let now = Date()
 
-        let start1 = calendar.date(bySettingHour: 10, minute: 0, second: 0, of: now) ?? now.addingTimeInterval(3600)
-        let end1 = calendar.date(bySettingHour: 11, minute: 0, second: 0, of: now) ?? now.addingTimeInterval(7200)
+        // Sample events are anchored to the current time so previews always have something coming up.
+        let startOfHour = calendar.dateInterval(of: .hour, for: now)?.start ?? now
+        let nextHour = startOfHour.addingTimeInterval(3600)
 
-        let start2 = calendar.date(bySettingHour: 13, minute: 30, second: 0, of: now) ?? now.addingTimeInterval(14400)
-        let end2 = calendar.date(bySettingHour: 14, minute: 15, second: 0, of: now) ?? now.addingTimeInterval(17100)
+        let start1 = calendar.date(bySettingHour: 9, minute: 0, second: 0, of: now) ?? now.addingTimeInterval(-7200)
+        let end1 = start1.addingTimeInterval(1800)
 
-        let start3 = calendar.date(bySettingHour: 16, minute: 0, second: 0, of: now) ?? now.addingTimeInterval(21600)
-        let end3 = calendar.date(bySettingHour: 17, minute: 0, second: 0, of: now) ?? now.addingTimeInterval(25200)
+        let start2 = nextHour
+        let end2 = start2.addingTimeInterval(2700)
+
+        let start3 = nextHour.addingTimeInterval(7200)
+        let end3 = start3.addingTimeInterval(3600)
 
         let tomorrow = calendar.date(byAdding: .day, value: 1, to: now) ?? now.addingTimeInterval(86400)
         let start4 = calendar.date(bySettingHour: 9, minute: 30, second: 0, of: tomorrow) ?? tomorrow
 
         events = [
             GlassCalendarEvent(
-                title: "Executive Product Keynote",
+                title: "Team standup",
                 startDate: start1,
                 endDate: end1,
-                location: "Apple Park • Steve Jobs Theater",
+                location: "Room 2B",
                 isAllDay: false,
                 calendarColorHex: "#FF3B30"
             ),
             GlassCalendarEvent(
-                title: "Liquid Glass Design Sync",
+                title: "Lunch with Sam",
                 startDate: start2,
                 endDate: end2,
-                location: "Cupertino Lab 4",
+                location: "Corner Café",
                 isAllDay: false,
                 calendarColorHex: "#FF9500"
             ),
             GlassCalendarEvent(
-                title: "Engineering Architecture Review",
+                title: "Dentist",
                 startDate: start3,
                 endDate: end3,
-                location: "Virtual Meeting Room",
+                location: "",
                 isAllDay: false,
                 calendarColorHex: "#0A84FF"
             ),
             GlassCalendarEvent(
-                title: "Product Release Kickoff",
+                title: "Yoga class",
                 startDate: start4,
                 endDate: start4.addingTimeInterval(3600),
-                location: "Infinite Loop",
+                location: "",
                 isAllDay: false,
                 calendarColorHex: "#BF5AF2"
             )
-        ]
+        ].sorted { $0.startDate < $1.startDate }
     }
 
     /// Queries EventKit for live calendar events
